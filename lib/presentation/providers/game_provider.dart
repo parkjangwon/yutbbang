@@ -165,7 +165,7 @@ class GameNotifier extends StateNotifier<GameState> {
           state = state.copyWith(status: GameStatus.selectingMal);
           if (!state.currentTeam.isHuman)
             Future.delayed(
-              const Duration(milliseconds: 1000),
+              const Duration(milliseconds: 1500),
               () => aiSelectAndMove(),
             );
         }
@@ -207,7 +207,7 @@ class GameNotifier extends StateNotifier<GameState> {
         );
         if (!state.currentTeam.isHuman)
           Future.delayed(
-            const Duration(milliseconds: 1000),
+            const Duration(milliseconds: 1500),
             () => aiSelectAndMove(),
           );
         else {
@@ -613,7 +613,7 @@ class GameNotifier extends StateNotifier<GameState> {
       );
       if (!state.currentTeam.isHuman) {
         Future.delayed(
-          const Duration(milliseconds: 1200),
+          const Duration(milliseconds: 1500),
           () => aiSelectAndMove(),
         );
       } else {
