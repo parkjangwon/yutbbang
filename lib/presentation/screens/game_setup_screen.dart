@@ -219,6 +219,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                 '빽도 사용',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
+              subtitle: const Text('도 하나에 표시된 빽도를 사용합니다.'),
               value: config.useBackDo,
               activeColor: Colors.brown,
               onChanged: (val) => setState(() {
