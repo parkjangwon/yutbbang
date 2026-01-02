@@ -31,7 +31,7 @@ class AILogic {
       final path = PathFinder.calculatePath(
         mal.currentNodeId ?? -1,
         result,
-        previousNodeId: mal.lastNodeId,
+        previousNodeIds: mal.historyNodeIds,
       ); // Use -1 for start
 
       if (path.isEmpty) continue;

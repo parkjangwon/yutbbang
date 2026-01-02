@@ -225,6 +225,18 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                 _localConfig = _localConfig.copyWith(useBackDo: val);
               }),
             ),
+            SwitchListTile(
+              title: const Text(
+                '컨트롤 모드',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text('버튼을 누르고 있다가 떼서 결과를 결정합니다.'),
+              value: config.useGaugeControl,
+              activeColor: Colors.brown,
+              onChanged: (val) => setState(() {
+                _localConfig = _localConfig.copyWith(useGaugeControl: val);
+              }),
+            ),
             const Divider(height: 40),
             const Text(
               '낙 확률 설정',
@@ -241,7 +253,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                 runSpacing: 6,
                 children: [
                   _buildNakChoice(
-                    label: '낮음',
+                    label: '쉬움',
                     percent: 10,
                     selected: config.nakChancePercent == 10,
                     onSelected: (selected) {
@@ -267,7 +279,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                     },
                   ),
                   _buildNakChoice(
-                    label: '높음',
+                    label: '어려움',
                     percent: 25,
                     selected: config.nakChancePercent == 25,
                     onSelected: (selected) {
@@ -318,8 +330,11 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
     required bool selected,
     required ValueChanged<bool> onSelected,
   }) {
+    final displayText = _localConfig.useGaugeControl
+        ? '낙 : $label'
+        : '$label ($percent%)';
     return ChoiceChip(
-      label: Text('$label (${percent}%)'),
+      label: Text(displayText),
       selected: selected,
       onSelected: onSelected,
     );

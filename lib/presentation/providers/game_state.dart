@@ -12,6 +12,12 @@ enum GameStatus {
   finished,
 }
 
+class NakZone {
+  final double start;
+  final double end;
+  const NakZone(this.start, this.end);
+}
+
 class GameState {
   final GameRuleConfig config;
   final GameRuleConfig activeConfig;
@@ -24,6 +30,9 @@ class GameState {
   final int? movingMalId;
   final List<int> currentPath;
   final YutResult? lastResult;
+  final double gaugeValue; // 0.0 to 1.0
+  final bool isGaugeRunning;
+  final List<NakZone> nakZones;
 
   GameState({
     required this.config,
@@ -37,6 +46,9 @@ class GameState {
     this.movingMalId,
     this.currentPath = const [],
     this.lastResult,
+    this.gaugeValue = 0.0,
+    this.isGaugeRunning = false,
+    this.nakZones = const [],
   });
 
   Team get currentTeam => teams[turnIndex % teams.length];
@@ -53,6 +65,9 @@ class GameState {
     int? movingMalId,
     List<int>? currentPath,
     YutResult? lastResult,
+    double? gaugeValue,
+    bool? isGaugeRunning,
+    List<NakZone>? nakZones,
   }) {
     return GameState(
       config: config ?? this.config,
@@ -66,6 +81,9 @@ class GameState {
       movingMalId: movingMalId ?? this.movingMalId,
       currentPath: currentPath ?? this.currentPath,
       lastResult: lastResult ?? this.lastResult,
+      gaugeValue: gaugeValue ?? this.gaugeValue,
+      isGaugeRunning: isGaugeRunning ?? this.isGaugeRunning,
+      nakZones: nakZones ?? this.nakZones,
     );
   }
 }

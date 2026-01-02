@@ -6,6 +6,8 @@ import '../../domain/models/yut_result.dart';
 import '../providers/game_provider.dart';
 import '../providers/game_state.dart';
 import '../../game/yut_game.dart';
+import '../widgets/throw_button.dart';
+import '../widgets/gauge_widget.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
   const GameScreen({super.key});
@@ -76,6 +78,20 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                       child: _buildThrowButton(),
                     ),
 
+                  // 게이지 UI (팡야 방식)
+                  if (state.isGaugeRunning)
+                    Positioned(
+                      bottom: 120,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: YutGaugeWidget(
+                          value: state.gaugeValue,
+                          nakZones: state.nakZones,
+                        ),
+                      ),
+                    ),
+
                   // 승리 오버레이
                   if (state.status == GameStatus.finished)
                     _buildVictoryOverlay(state),
@@ -93,19 +109,35 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
   Widget _buildTurnIndicator(GameState state) {
     final team = state.currentTeam;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-      decoration: BoxDecoration(
-        color: _getTeamColor(team.color),
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 10,
-            color: Colors.black26,
-            offset: const Offset(0, 4),
+    final isMyTurn = team.isHuman;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.8, end: 1.0),
+      duration: const Duration(seconds: 1),
+      curve: Curves.easeInOut,
+      builder: (context, value, child) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          decoration: BoxDecoration(
+            color: _getTeamColor(team.color),
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: isMyTurn ? 15 * value : 10,
+                color: isMyTurn
+                    ? _getTeamColor(team.color).withOpacity(0.6 * value)
+                    : Colors.black26,
+                offset: const Offset(0, 4),
+                spreadRadius: isMyTurn ? 2 * value : 0,
+              ),
+            ],
+            border: isMyTurn ? Border.all(color: Colors.white, width: 2) : null,
           ),
-        ],
-      ),
+          child: child,
+        );
+      },
+      onEnd:
+          () {}, // Repeat logic could be added here if needed, but build will re-trigger
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -145,6 +177,21 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   }
 
   Widget _buildNakIndicator(GameState state) {
+    String nakLabel;
+    final nakChance = state.activeConfig.nakChancePercent;
+
+    if (state.activeConfig.useGaugeControl) {
+      if (nakChance >= 25) {
+        nakLabel = '낙 : 어려움';
+      } else if (nakChance >= 15) {
+        nakLabel = '낙 : 보통';
+      } else {
+        nakLabel = '낙 : 쉬움';
+      }
+    } else {
+      nakLabel = '낙 $nakChance%';
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -152,7 +199,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        '낙 ${state.activeConfig.nakChancePercent}%',
+        nakLabel,
         style: const TextStyle(
           color: Colors.brown,
           fontWeight: FontWeight.bold,
@@ -177,8 +224,10 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   }
 
   Widget _buildStatusText(GameState state) {
-    final showResult = state.lastResult != null && state.status != GameStatus.moving;
-    final showGuide = state.status == GameStatus.selectingMal ||
+    final showResult =
+        state.lastResult != null && state.status != GameStatus.moving;
+    final showGuide =
+        state.status == GameStatus.selectingMal ||
         state.status == GameStatus.awaitingShortcutDecision;
 
     if (!showResult && !showGuide) return const SizedBox.shrink();
@@ -531,45 +580,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   }
 
   Widget _buildThrowButton() {
-    return Container(
-      width: 70,
-      height: 70,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.orange.shade600,
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 15,
-            color: Colors.black.withOpacity(0.3),
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => ref.read(gameProvider.notifier).throwYut(true),
-          customBorder: const CircleBorder(),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.casino, color: Colors.white, size: 28),
-                const SizedBox(height: 2),
-                Text(
-                  '던지기',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+    return const InteractiveThrowButton();
   }
 
   Widget _buildVictoryOverlay(GameState state) {

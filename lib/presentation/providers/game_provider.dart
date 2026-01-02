@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
+import 'dart:math';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/game_rule_config.dart';
 import '../../domain/models/team.dart';
 import '../../domain/models/yut_result.dart';
@@ -14,7 +17,12 @@ final gameProvider = StateNotifierProvider<GameNotifier, GameState>((ref) {
 });
 
 class GameNotifier extends StateNotifier<GameState> {
-  GameNotifier() : super(_initialState());
+  GameNotifier() : super(_initialState()) {
+    _loadConfig();
+  }
+
+  Timer? _gaugeTimer;
+  double _gaugeDirection = 1.0;
 
   static GameState _initialState() {
     const config = GameRuleConfig();
@@ -34,8 +42,9 @@ class GameNotifier extends StateNotifier<GameState> {
     final List<Team> teams = [];
 
     for (int i = 0; i < gameConfig.teamCount; i++) {
-      final controllerId =
-          i < gameConfig.teamControllers.length ? gameConfig.teamControllers[i] : 0;
+      final controllerId = i < gameConfig.teamControllers.length
+          ? gameConfig.teamControllers[i]
+          : 0;
       teams.add(
         Team(
           name: gameConfig.teamNames[i],
@@ -50,14 +59,51 @@ class GameNotifier extends StateNotifier<GameState> {
       );
     }
 
-    return GameState(config: globalConfig, activeConfig: gameConfig, teams: teams);
+    return GameState(
+      config: globalConfig,
+      activeConfig: gameConfig,
+      teams: teams,
+    );
   }
 
   void updateConfig(GameRuleConfig config) {
     state = state.copyWith(
       config: config,
-      activeConfig: state.status == GameStatus.lobby ? config : state.activeConfig,
+      activeConfig: state.status == GameStatus.lobby
+          ? config
+          : state.activeConfig,
     );
+    _saveConfig(config);
+  }
+
+  Future<void> _loadConfig() async {
+    final prefs = await SharedPreferences.getInstance();
+    final useBackDo = prefs.getBool('useBackDo') ?? true;
+    final useGaugeControl = prefs.getBool('useGaugeControl') ?? false;
+    final aiDifficulty = prefs.getInt('aiDifficulty') ?? 5;
+    final nakChancePercent = prefs.getInt('nakChancePercent') ?? 15;
+
+    final newConfig = state.config.copyWith(
+      useBackDo: useBackDo,
+      useGaugeControl: useGaugeControl,
+      aiDifficulty: aiDifficulty,
+      nakChancePercent: nakChancePercent,
+    );
+
+    state = state.copyWith(
+      config: newConfig,
+      activeConfig: state.status == GameStatus.lobby
+          ? newConfig
+          : state.activeConfig,
+    );
+  }
+
+  Future<void> _saveConfig(GameRuleConfig config) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('useBackDo', config.useBackDo);
+    await prefs.setBool('useGaugeControl', config.useGaugeControl);
+    await prefs.setInt('aiDifficulty', config.aiDifficulty);
+    await prefs.setInt('nakChancePercent', config.nakChancePercent);
   }
 
   void startGameWithConfig(GameRuleConfig gameConfig) {
@@ -67,14 +113,17 @@ class GameNotifier extends StateNotifier<GameState> {
     ).copyWith(status: GameStatus.throwing);
   }
 
-  void throwYut(bool isSafe) {
+  void throwYut({bool forceNak = false}) {
     if (state.status != GameStatus.throwing) return;
     state = state.copyWith(status: GameStatus.moving);
 
+    final isGaugeMode = state.activeConfig.useGaugeControl;
     final throwRes = YutLogic.throwYut(
-      isSafe: isSafe,
+      forceNak: forceNak,
+      randomNakChance: isGaugeMode
+          ? 0.0
+          : (state.activeConfig.nakChancePercent / 100.0),
       useBackDo: state.activeConfig.useBackDo,
-      nakChance: state.activeConfig.nakChancePercent / 100.0,
     );
     final result = throwRes.result;
     if (state.currentTeam.isHuman) {
@@ -90,9 +139,24 @@ class GameNotifier extends StateNotifier<GameState> {
     Future.delayed(const Duration(milliseconds: 1000), () {
       if (!mounted) return;
       if (result == YutResult.nak) {
-        nextTurn();
+        // If 'Mo' was thrown and then 'Nak', 'Mo' is still valid?
+        // User requested: '모' 이후 '낙' 발생 시 '모' 이동 가능하게.
+        // This means Nak only affects the current throw, and if there were previous bonus throws, they remain.
+        if (state.currentThrows.isEmpty) {
+          nextTurn();
+        } else {
+          // Stay in selectingMal status if there are pending throws
+          state = state.copyWith(status: GameStatus.selectingMal);
+          if (!state.currentTeam.isHuman)
+            Future.delayed(
+              const Duration(milliseconds: 1000),
+              () => aiSelectAndMove(),
+            );
+        }
         return;
       }
+
+      final newThrows = [...state.currentThrows, result];
 
       if (result == YutResult.backDo) {
         final team = state.currentTeam;
@@ -101,12 +165,13 @@ class GameNotifier extends StateNotifier<GameState> {
         );
         if (!piecesOnBoard) {
           // DISCARD useless Back-do: don't add to currentThrows
+          state = state.copyWith(
+            currentThrows: state.currentThrows,
+          ); // Ensure state updates for turn end check if needed
           _finalizeMove();
           return;
         }
       }
-
-      final newThrows = [...state.currentThrows, result];
 
       if (result.isBonusTurn) {
         state = state.copyWith(
@@ -114,10 +179,7 @@ class GameNotifier extends StateNotifier<GameState> {
           status: GameStatus.throwing,
         );
         if (!state.currentTeam.isHuman)
-          Future.delayed(
-            const Duration(milliseconds: 1000),
-            () => throwYut(true),
-          );
+          Future.delayed(const Duration(milliseconds: 1000), () => throwYut());
       } else {
         state = state.copyWith(
           currentThrows: newThrows,
@@ -128,8 +190,87 @@ class GameNotifier extends StateNotifier<GameState> {
             const Duration(milliseconds: 1000),
             () => aiSelectAndMove(),
           );
+        else {
+          // Check for auto-move if only one mal is movable
+          _checkAutoMove();
+        }
       }
     });
+  }
+
+  void startGauge() {
+    if (state.status != GameStatus.throwing || state.isGaugeRunning) return;
+    if (!state.currentTeam.isHuman) {
+      throwYut();
+      return;
+    }
+
+    _gaugeDirection = 1.0;
+
+    // 1. Generate Random Nak Zones based on difficulty (nakChancePercent)
+    final nakChance = state.activeConfig.nakChancePercent;
+    int zoneCount = 1;
+    double zoneWidth = 0.15;
+    double speedStep = 0.035;
+
+    if (nakChance >= 25) {
+      zoneCount = 3;
+      zoneWidth = 0.08;
+      speedStep = 0.055;
+    } else if (nakChance >= 15) {
+      zoneCount = 2;
+      zoneWidth = 0.1;
+      speedStep = 0.045;
+    }
+
+    final List<NakZone> zones = [];
+    final random = Random();
+    for (int i = 0; i < zoneCount; i++) {
+      // Find a non-overlapping spot
+      double start = 0.1 + random.nextDouble() * (0.8 - zoneWidth);
+      // Simplify: just add them, visually they might merge if too close, which is fine
+      zones.add(NakZone(start, start + zoneWidth));
+    }
+
+    state = state.copyWith(
+      isGaugeRunning: true,
+      gaugeValue: 0.0,
+      nakZones: zones,
+    );
+
+    _gaugeTimer?.cancel();
+    _gaugeTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
+      double nextValue = state.gaugeValue + (speedStep * _gaugeDirection);
+      if (nextValue >= 1.0) {
+        nextValue = 1.0;
+        _gaugeDirection = -1.0;
+      } else if (nextValue <= 0.0) {
+        nextValue = 0.0;
+        _gaugeDirection = 1.0;
+      }
+      state = state.copyWith(gaugeValue: nextValue);
+    });
+  }
+
+  void stopGauge() {
+    if (!state.isGaugeRunning) return;
+    _gaugeTimer?.cancel();
+    _gaugeTimer = null;
+
+    final value = state.gaugeValue;
+    // Check if within any NakZone
+    bool forceNak = state.nakZones.any(
+      (z) => value >= z.start && value <= z.end,
+    );
+
+    state = state.copyWith(isGaugeRunning: false);
+    throwYut(forceNak: forceNak);
+  }
+
+  @override
+  void dispose() {
+    _gaugeTimer?.cancel();
+    super.dispose();
   }
 
   void aiSelectAndMove() {
@@ -227,7 +368,7 @@ class GameNotifier extends StateNotifier<GameState> {
       startId,
       result,
       useShortcut: useShortcut,
-      previousNodeId: mal.lastNodeId,
+      previousNodeIds: mal.historyNodeIds,
     );
 
     // If the move would finish but an opponent is on the landing node,
@@ -259,13 +400,14 @@ class GameNotifier extends StateNotifier<GameState> {
 
     Future.delayed(Duration(milliseconds: 300 * path.length + 300), () {
       if (!mounted) return;
-      _applyMoveResult(malId, path);
+      _applyMoveResult(malId, path, result);
     });
   }
 
-  void _applyMoveResult(int malId, List<int> path) {
+  void _applyMoveResult(int malId, List<int> path, YutResult result) {
     final destinationId = path.last;
-    final landingNodeId = destinationId == PathFinder.finishNodeId && path.length >= 2
+    final landingNodeId =
+        destinationId == PathFinder.finishNodeId && path.length >= 2
         ? path[path.length - 2]
         : destinationId;
     final teamIndex = state.turnIndex % state.teams.length;
@@ -275,8 +417,7 @@ class GameNotifier extends StateNotifier<GameState> {
     final previousNodeId = mal.currentNodeId;
     final lastStepFromId = path.length >= 2
         ? path[path.length - 2]
-        : (previousNodeId ??
-            (path.length == 1 && path.first == 1 ? 0 : null));
+        : (previousNodeId ?? (path.length == 1 && path.first == 1 ? 0 : null));
 
     bool caughtOpponent = false;
     bool caughtHuman = false;
@@ -296,13 +437,45 @@ class GameNotifier extends StateNotifier<GameState> {
           return m.copyWith(
             currentNodeId: null,
             lastNodeId: lastStepFromId,
+            historyNodeIds: [],
             isFinished: true,
           );
         }
         if (destinationId == PathFinder.startNodeId) {
-          return m.copyWith(currentNodeId: null, lastNodeId: lastStepFromId);
+          return m.copyWith(
+            currentNodeId: null,
+            lastNodeId: lastStepFromId,
+            historyNodeIds: [],
+          );
         }
-        return m.copyWith(currentNodeId: destinationId, lastNodeId: lastStepFromId);
+
+        // Update history: Add all intermediate nodes to stack if moving forward,
+        // Remove from stack if moving backward (Back-Do).
+        List<int> newHistory = List<int>.from(m.historyNodeIds);
+        if (result == YutResult.backDo) {
+          if (newHistory.isNotEmpty) newHistory.removeLast();
+        } else {
+          // Add the starting node
+          if (previousNodeId != null) {
+            newHistory.add(previousNodeId);
+          }
+          // Add all intermediate nodes from the path (excluding the final destination)
+          if (path.length > 1) {
+            for (int k = 0; k < path.length - 1; k++) {
+              final intermediateNodeId = path[k];
+              // Avoid duplicates if previousNodeId was already path[0] or something similar
+              if (newHistory.isEmpty || newHistory.last != intermediateNodeId) {
+                newHistory.add(intermediateNodeId);
+              }
+            }
+          }
+        }
+
+        return m.copyWith(
+          currentNodeId: destinationId,
+          lastNodeId: lastStepFromId,
+          historyNodeIds: newHistory,
+        );
       }
       return m;
     }).toList();
@@ -328,6 +501,7 @@ class GameNotifier extends StateNotifier<GameState> {
               return m.copyWith(
                 currentNodeId: null,
                 lastNodeId: null,
+                historyNodeIds: [],
                 isFinished: false,
               ); // Back to start circle
             }
@@ -363,10 +537,7 @@ class GameNotifier extends StateNotifier<GameState> {
         lastResult: null, // Clear 'Catcher' result text before bonus throw
       );
       if (!state.currentTeam.isHuman)
-        Future.delayed(
-          const Duration(milliseconds: 1500),
-          () => throwYut(true),
-        );
+        Future.delayed(const Duration(milliseconds: 1500), () => throwYut());
     } else {
       _finalizeMove();
     }
@@ -385,11 +556,44 @@ class GameNotifier extends StateNotifier<GameState> {
         status: GameStatus.selectingMal,
         lastResult: null, // Clear result text when transitioning to selection
       );
-      if (!state.currentTeam.isHuman)
+      if (!state.currentTeam.isHuman) {
         Future.delayed(
           const Duration(milliseconds: 1200),
           () => aiSelectAndMove(),
         );
+      } else {
+        _checkAutoMove();
+      }
+    }
+  }
+
+  void _checkAutoMove() {
+    if (state.status != GameStatus.selectingMal || !state.currentTeam.isHuman)
+      return;
+    if (state.currentThrows.isEmpty) return;
+
+    final result = state.currentThrows.first;
+    final team = state.currentTeam;
+
+    // Find movable mals
+    final movableMals = team.mals.where((m) {
+      if (m.isFinished) return false;
+      if (result == YutResult.backDo && m.currentNodeId == null) return false;
+      return true;
+    }).toList();
+
+    // If only one mal (or one stack) is movable, auto-select it
+    // Note: yutnori often groups pieces at the same position.
+    final distinctPositions = movableMals.map((m) => m.currentNodeId).toSet();
+
+    if (distinctPositions.length == 1) {
+      // All movable pieces are at the same spot (or there's only one piece)
+      final malToMove = movableMals.first;
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && state.status == GameStatus.selectingMal) {
+          selectMal(malToMove.id);
+        }
+      });
     }
   }
 
@@ -404,7 +608,7 @@ class GameNotifier extends StateNotifier<GameState> {
       selectedMalId: null,
     );
     if (!state.currentTeam.isHuman)
-      Future.delayed(const Duration(milliseconds: 1500), () => throwYut(true));
+      Future.delayed(const Duration(milliseconds: 1500), () => throwYut());
   }
 
   void _triggerThrowHaptics(YutResult result) {

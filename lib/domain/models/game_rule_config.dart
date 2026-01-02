@@ -8,6 +8,7 @@ class GameRuleConfig {
   final int teamCount;
   final List<String> teamNames;
   final int nakChancePercent;
+  final bool useGaugeControl; // New: Gauge control mode like PangYa
   final List<int> teamControllers;
 
   const GameRuleConfig({
@@ -18,6 +19,7 @@ class GameRuleConfig {
     this.teamCount = 2,
     this.teamNames = const ['A팀', 'B팀', 'C팀', 'D팀'],
     this.nakChancePercent = 15,
+    this.useGaugeControl = false,
     this.teamControllers = const [1, 0, 0, 0],
   });
 
@@ -29,6 +31,7 @@ class GameRuleConfig {
     int? teamCount,
     List<String>? teamNames,
     int? nakChancePercent,
+    bool? useGaugeControl,
     List<int>? teamControllers,
   }) {
     return GameRuleConfig(
@@ -39,6 +42,7 @@ class GameRuleConfig {
       teamCount: teamCount ?? this.teamCount,
       teamNames: teamNames ?? this.teamNames,
       nakChancePercent: nakChancePercent ?? this.nakChancePercent,
+      useGaugeControl: useGaugeControl ?? this.useGaugeControl,
       teamControllers: teamControllers ?? this.teamControllers,
     );
   }

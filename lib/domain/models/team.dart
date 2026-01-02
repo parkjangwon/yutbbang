@@ -4,21 +4,24 @@ class Mal {
   static const Object _unset = Object();
   final int id;
   final TeamColor color;
-  int? currentNodeId;
-  int? lastNodeId;
-  bool isFinished;
+  final int? currentNodeId;
+  final int? lastNodeId;
+  final List<int> historyNodeIds; // To handle multiple Back-Dos correctly
+  final bool isFinished;
 
   Mal({
     required this.id,
     required this.color,
     this.currentNodeId,
     this.lastNodeId,
+    this.historyNodeIds = const [],
     this.isFinished = false,
   });
 
   Mal copyWith({
     Object? currentNodeId = _unset,
     Object? lastNodeId = _unset,
+    List<int>? historyNodeIds,
     bool? isFinished,
   }) {
     return Mal(
@@ -28,6 +31,7 @@ class Mal {
           ? this.currentNodeId
           : currentNodeId as int?,
       lastNodeId: lastNodeId == _unset ? this.lastNodeId : lastNodeId as int?,
+      historyNodeIds: historyNodeIds ?? this.historyNodeIds,
       isFinished: isFinished ?? this.isFinished,
     );
   }

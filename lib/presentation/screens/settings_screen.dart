@@ -49,7 +49,7 @@ class SettingsScreen extends ConsumerWidget {
           Row(
             children: [
               _buildNakChoice(
-                label: '낮음',
+                label: '쉬움',
                 percent: 10,
                 selected: config.nakChancePercent == 10,
                 onSelected: (selected) {
@@ -58,6 +58,7 @@ class SettingsScreen extends ConsumerWidget {
                       config.copyWith(nakChancePercent: 10),
                     );
                 },
+                isControlMode: config.useGaugeControl,
               ),
               const SizedBox(width: 8),
               _buildNakChoice(
@@ -70,10 +71,11 @@ class SettingsScreen extends ConsumerWidget {
                       config.copyWith(nakChancePercent: 15),
                     );
                 },
+                isControlMode: config.useGaugeControl,
               ),
               const SizedBox(width: 8),
               _buildNakChoice(
-                label: '높음',
+                label: '어려움',
                 percent: 25,
                 selected: config.nakChancePercent == 25,
                 onSelected: (selected) {
@@ -82,8 +84,32 @@ class SettingsScreen extends ConsumerWidget {
                       config.copyWith(nakChancePercent: 25),
                     );
                 },
+                isControlMode: config.useGaugeControl,
               ),
             ],
+          ),
+          const Divider(height: 40),
+          const Text(
+            '규칙 기본 설정',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          SwitchListTile(
+            title: const Text('빽도 사용'),
+            subtitle: const Text('도 하나에 표시된 빽도를 사용합니다.'),
+            value: config.useBackDo,
+            activeColor: Colors.brown,
+            onChanged: (val) {
+              gameNotifier.updateConfig(config.copyWith(useBackDo: val));
+            },
+          ),
+          SwitchListTile(
+            title: const Text('컨트롤 모드'),
+            subtitle: const Text('게이지 타이밍으로 결정하는 컨트롤 모드를 기본으로 사용합니다.'),
+            value: config.useGaugeControl,
+            activeColor: Colors.brown,
+            onChanged: (val) {
+              gameNotifier.updateConfig(config.copyWith(useGaugeControl: val));
+            },
           ),
           const Divider(height: 40),
           ListTile(
@@ -116,9 +142,11 @@ class SettingsScreen extends ConsumerWidget {
     required int percent,
     required bool selected,
     required ValueChanged<bool> onSelected,
+    bool isControlMode = false,
   }) {
+    final displayText = isControlMode ? '낙 : $label' : '$label ($percent%)';
     return ChoiceChip(
-      label: Text('$label (${percent}%)'),
+      label: Text(displayText),
       selected: selected,
       onSelected: onSelected,
     );
