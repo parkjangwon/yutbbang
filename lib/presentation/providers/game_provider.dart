@@ -246,9 +246,23 @@ class GameNotifier extends StateNotifier<GameState> {
     final List<NakZone> zones = [];
     final random = Random();
     for (int i = 0; i < zoneCount; i++) {
-      // Find a non-overlapping spot
-      double start = 0.1 + random.nextDouble() * (0.8 - zoneWidth);
-      // Simplify: just add them, visually they might merge if too close, which is fine
+      double start = 0;
+      bool overlap = true;
+      int attempts = 0;
+      while (overlap && attempts < 50) {
+        start = 0.1 + random.nextDouble() * (0.8 - zoneWidth);
+        overlap = false;
+        if (nakChance >= 25) {
+          final end = start + zoneWidth;
+          for (var z in zones) {
+            if (!(end < z.start || start > z.end)) {
+              overlap = true;
+              break;
+            }
+          }
+        }
+        attempts++;
+      }
       zones.add(NakZone(start, start + zoneWidth));
     }
 
