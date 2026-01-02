@@ -240,6 +240,51 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
             ),
             const Divider(height: 40),
             const Text(
+              '특수 규칙 (House Rules)',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.brown,
+              ),
+            ),
+            SwitchListTile(
+              title: const Text(
+                '빽도 날기',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text('대기 중인 말이 빽도가 나오면 즉시 골인합니다.'),
+              value: config.backDoFlying,
+              activeColor: Colors.brown,
+              onChanged: (val) => setState(() {
+                _localConfig = _localConfig.copyWith(backDoFlying: val);
+              }),
+            ),
+            SwitchListTile(
+              title: const Text(
+                '자동 임신',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text('중앙 지점 도착 시 대기 중인 말 하나를 자동으로 업습니다.'),
+              value: config.autoCarrier,
+              activeColor: Colors.brown,
+              onChanged: (val) => setState(() {
+                _localConfig = _localConfig.copyWith(autoCarrier: val);
+              }),
+            ),
+            SwitchListTile(
+              title: const Text(
+                '전낙',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text('낙 발생 시 해당 턴의 모든 이전 결과가 무효화됩니다.'),
+              value: config.totalNak,
+              activeColor: Colors.brown,
+              onChanged: (val) => setState(() {
+                _localConfig = _localConfig.copyWith(totalNak: val);
+              }),
+            ),
+            const Divider(height: 40),
+            const Text(
               '낙 확률 설정',
               style: TextStyle(
                 fontSize: 22,

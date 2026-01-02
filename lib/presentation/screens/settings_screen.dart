@@ -112,6 +112,38 @@ class SettingsScreen extends ConsumerWidget {
             },
           ),
           const Divider(height: 40),
+          const Text(
+            '특수 규칙 (House Rules)',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          SwitchListTile(
+            title: const Text('빽도 날기'),
+            subtitle: const Text('대기 중인 말이 빽도가 나오면 즉시 골인합니다.'),
+            value: config.backDoFlying,
+            activeColor: Colors.brown,
+            onChanged: (val) {
+              gameNotifier.updateConfig(config.copyWith(backDoFlying: val));
+            },
+          ),
+          SwitchListTile(
+            title: const Text('자동 임신'),
+            subtitle: const Text('중앙 지점 도착 시 대기 중인 말 하나를 자동으로 업습니다.'),
+            value: config.autoCarrier,
+            activeColor: Colors.brown,
+            onChanged: (val) {
+              gameNotifier.updateConfig(config.copyWith(autoCarrier: val));
+            },
+          ),
+          SwitchListTile(
+            title: const Text('전낙'),
+            subtitle: const Text('낙 발생 시 해당 턴의 모든 이전 결과(윷/모 등)가 무효화됩니다.'),
+            value: config.totalNak,
+            activeColor: Colors.brown,
+            onChanged: (val) {
+              gameNotifier.updateConfig(config.copyWith(totalNak: val));
+            },
+          ),
+          const Divider(height: 40),
           ListTile(
             title: const Text('윷놀이 가이드'),
             subtitle: const Text('규칙과 게임 설명 보기'),

@@ -102,7 +102,7 @@ class BoardGraph {
       id: 20,
       x: 0.5,
       y: 0.5,
-      nextId: 23,
+      nextId: 27, // 기본 경로를 완주 방향(27번)으로 설정
       prevId: 22,
     ); // Center
     map[23] = const BoardNode(id: 23, x: 0.35, y: 0.65, nextId: 24, prevId: 20);
@@ -121,9 +121,9 @@ class BoardGraph {
     // Apply Shortcuts
     map[5] = map[5]!.copyWithShortcut(21);
     map[10] = map[10]!.copyWithShortcut(25);
-    // Rule: if you land on Center, next moves usually go towards 0 unless you choose otherwise.
-    // Let's set 27 as the shortcut from 20.
-    map[20] = map[20]!.copyWithShortcut(27);
+    // 규칙: 중앙(20번)에 멈추면 다음 이동은 선택 없이 무조건 완주 방향(27번)으로 고정함.
+    // 기존 shortcutNextId였던 23번(좌하단 방향)은 이제 선택지로 제공되지 않음.
+    map[20] = map[20]!.copyWithShortcut(23);
 
     return map;
   }

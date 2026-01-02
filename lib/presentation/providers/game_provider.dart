@@ -80,12 +80,18 @@ class GameNotifier extends StateNotifier<GameState> {
     final prefs = await SharedPreferences.getInstance();
     final useBackDo = prefs.getBool('useBackDo') ?? true;
     final useGaugeControl = prefs.getBool('useGaugeControl') ?? false;
+    final backDoFlying = prefs.getBool('backDoFlying') ?? false;
+    final autoCarrier = prefs.getBool('autoCarrier') ?? false;
+    final totalNak = prefs.getBool('totalNak') ?? false;
     final aiDifficulty = prefs.getInt('aiDifficulty') ?? 5;
     final nakChancePercent = prefs.getInt('nakChancePercent') ?? 15;
 
     final newConfig = state.config.copyWith(
       useBackDo: useBackDo,
       useGaugeControl: useGaugeControl,
+      backDoFlying: backDoFlying,
+      autoCarrier: autoCarrier,
+      totalNak: totalNak,
       aiDifficulty: aiDifficulty,
       nakChancePercent: nakChancePercent,
     );
@@ -102,6 +108,9 @@ class GameNotifier extends StateNotifier<GameState> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('useBackDo', config.useBackDo);
     await prefs.setBool('useGaugeControl', config.useGaugeControl);
+    await prefs.setBool('backDoFlying', config.backDoFlying);
+    await prefs.setBool('autoCarrier', config.autoCarrier);
+    await prefs.setBool('totalNak', config.totalNak);
     await prefs.setInt('aiDifficulty', config.aiDifficulty);
     await prefs.setInt('nakChancePercent', config.nakChancePercent);
   }
@@ -139,13 +148,17 @@ class GameNotifier extends StateNotifier<GameState> {
     Future.delayed(const Duration(milliseconds: 1000), () {
       if (!mounted) return;
       if (result == YutResult.nak) {
-        // If 'Mo' was thrown and then 'Nak', 'Mo' is still valid?
-        // User requested: '모' 이후 '낙' 발생 시 '모' 이동 가능하게.
-        // This means Nak only affects the current throw, and if there were previous bonus throws, they remain.
+        // 전낙 규칙: 낙이 발생하면 이전 윷/모 결과도 모두 취소하고 턴 종료
+        if (state.activeConfig.totalNak && state.currentThrows.isNotEmpty) {
+          state = state.copyWith(currentThrows: []);
+          nextTurn();
+          return;
+        }
+
+        // 일반 낙 규칙 (기존): 윷/모를 던진 후 낙이 나오면 이전 결과는 유효
         if (state.currentThrows.isEmpty) {
           nextTurn();
         } else {
-          // Stay in selectingMal status if there are pending throws
           state = state.copyWith(status: GameStatus.selectingMal);
           if (!state.currentTeam.isHuman)
             Future.delayed(
@@ -163,11 +176,15 @@ class GameNotifier extends StateNotifier<GameState> {
         final piecesOnBoard = team.mals.any(
           (m) => m.currentNodeId != null && !m.isFinished,
         );
-        if (!piecesOnBoard) {
-          // DISCARD useless Back-do: don't add to currentThrows
-          state = state.copyWith(
-            currentThrows: state.currentThrows,
-          ); // Ensure state updates for turn end check if needed
+
+        // 빽도 날기 규칙: 판 위에 말이 있어도 대기 중인 말이 빽도로 즉시 골인 가능하면 유효 처리
+        bool canFly =
+            state.activeConfig.backDoFlying &&
+            team.mals.any((m) => m.currentNodeId == null && !m.isFinished);
+
+        if (!piecesOnBoard && !canFly) {
+          // 버리는 빽도 (판 위에 말도 없고 날기도 안되는 경우)
+          state = state.copyWith(currentThrows: state.currentThrows);
           _finalizeMove();
           return;
         }
@@ -325,14 +342,11 @@ class GameNotifier extends StateNotifier<GameState> {
       return;
     }
 
-    // Only ask for 1st corner (5), 2nd corner (10), and Center (20).
-    // Node 15 (3rd corner) is excluded and always goes straight.
+    // Only ask for 1st corner (5) and 2nd corner (10).
+    // Node 15 (3rd corner) and Node 20 (Center) are excluded and always go straight/towards finish.
     final hasShortcut =
         node?.shortcutNextId != null && result != YutResult.backDo;
-    final isDecisionPoint =
-        (mal.currentNodeId == 5 ||
-        mal.currentNodeId == 10 ||
-        mal.currentNodeId == 20);
+    final isDecisionPoint = (mal.currentNodeId == 5 || mal.currentNodeId == 10);
 
     if (hasShortcut && isDecisionPoint && state.currentTeam.isHuman) {
       state = state.copyWith(
@@ -364,12 +378,20 @@ class GameNotifier extends StateNotifier<GameState> {
     final mal = team.mals.firstWhere((m) => m.id == malId);
     final startId = mal.currentNodeId ?? PathFinder.startNodeId;
 
-    final path = PathFinder.calculatePath(
-      startId,
-      result,
-      useShortcut: useShortcut,
-      previousNodeIds: mal.historyNodeIds,
-    );
+    List<int> path;
+    // 빽도 날기 규칙 적용
+    if (state.activeConfig.backDoFlying &&
+        result == YutResult.backDo &&
+        startId == PathFinder.startNodeId) {
+      path = [PathFinder.finishNodeId];
+    } else {
+      path = PathFinder.calculatePath(
+        startId,
+        result,
+        useShortcut: useShortcut,
+        previousNodeIds: mal.historyNodeIds,
+      );
+    }
 
     // If the move would finish but an opponent is on the landing node,
     // stop at the node so the capture can happen.
@@ -449,21 +471,16 @@ class GameNotifier extends StateNotifier<GameState> {
           );
         }
 
-        // Update history: Add all intermediate nodes to stack if moving forward,
-        // Remove from stack if moving backward (Back-Do).
         List<int> newHistory = List<int>.from(m.historyNodeIds);
         if (result == YutResult.backDo) {
           if (newHistory.isNotEmpty) newHistory.removeLast();
         } else {
-          // Add the starting node
           if (previousNodeId != null) {
             newHistory.add(previousNodeId);
           }
-          // Add all intermediate nodes from the path (excluding the final destination)
           if (path.length > 1) {
             for (int k = 0; k < path.length - 1; k++) {
               final intermediateNodeId = path[k];
-              // Avoid duplicates if previousNodeId was already path[0] or something similar
               if (newHistory.isEmpty || newHistory.last != intermediateNodeId) {
                 newHistory.add(intermediateNodeId);
               }
@@ -479,6 +496,19 @@ class GameNotifier extends StateNotifier<GameState> {
       }
       return m;
     }).toList();
+
+    // 자동 임신 (Auto-Carrying) 규칙 적용: 중앙 도착 시 대기마 합류
+    if (state.activeConfig.autoCarrier && destinationId == 20) {
+      final startIndex = updatedMals.indexWhere(
+        (m) => m.currentNodeId == null && !m.isFinished,
+      );
+      if (startIndex != -1) {
+        updatedMals[startIndex] = updatedMals[startIndex].copyWith(
+          currentNodeId: 20,
+          historyNodeIds: [20],
+        );
+      }
+    }
 
     nextTeams[teamIndex] = team.copyWith(mals: updatedMals);
 
