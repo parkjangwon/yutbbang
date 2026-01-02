@@ -64,7 +64,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                   // 상태 텍스트 (선택 또는 결과)
                   Expanded(
                     child: Container(
-                      height: 50, // Fixed height to prevent layout jump
+                      height: 60, // Fixed height to prevent layout jump
                       alignment: Alignment.center,
                       child: _buildStatusText(state),
                     ),
@@ -249,41 +249,79 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
     if (!showResult && !showGuide) return const SizedBox.shrink();
 
-    final List<String> parts = [];
+    String? resultText;
+    String? guideText;
+
     if (showResult) {
       final resultLabels = state.currentThrows.map((e) => e.label).toList();
       if (state.lastResult != null &&
           !state.currentThrows.contains(state.lastResult)) {
         resultLabels.add(state.lastResult!.label);
       }
-      parts.add('결과 : ${resultLabels.join(', ')}');
+      resultText = '결과: ${resultLabels.join(', ')}';
     }
+
     if (showGuide) {
-      final guideText = state.status == GameStatus.awaitingShortcutDecision
+      guideText = state.status == GameStatus.awaitingShortcutDecision
           ? '지름길을 선택하세요'
           : '움직일 말을 선택하세요';
-      parts.add(guideText);
     }
 
-    final text = parts.join('  •  ');
-    final bgColor = showResult
-        ? Colors.orange.shade700.withOpacity(0.9)
-        : Colors.black.withOpacity(0.7);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // First line: Result (or empty space)
+        SizedBox(
+          height: 20,
+          child: resultText != null
+              ? Text(
+                  resultText,
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                    letterSpacing: 0.5,
+                    height: 1.0,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                )
+              : const SizedBox.shrink(),
         ),
-      ),
+        // Spacing between lines (only if both exist)
+        if (resultText != null && guideText != null) const SizedBox(height: 4),
+        // Second line: Guide (or empty space)
+        SizedBox(
+          height: 20,
+          child: guideText != null
+              ? Text(
+                  guideText,
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    letterSpacing: 0.3,
+                    height: 1.0,
+                    shadows: [
+                      Shadow(
+                        color: Colors.white.withOpacity(0.8),
+                        blurRadius: 3,
+                        offset: const Offset(0, 0),
+                      ),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 
