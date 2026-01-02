@@ -234,11 +234,11 @@ class GameNotifier extends StateNotifier<GameState> {
     double speedStep = 0.035;
 
     if (nakChance >= 25) {
-      zoneCount = 3;
+      zoneCount = 4;
       zoneWidth = 0.08;
       speedStep = 0.055;
     } else if (nakChance >= 15) {
-      zoneCount = 2;
+      zoneCount = 3;
       zoneWidth = 0.1;
       speedStep = 0.045;
     }
