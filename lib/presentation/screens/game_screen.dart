@@ -34,11 +34,22 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // 1. 상단 정보 바 (AppBar처럼)
-            Container(
+            // 1. 상단 정보 바 (AppBar처럼) - 현재 팀 색상 반영
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 500),
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: Colors.black.withOpacity(0.05),
+              decoration: BoxDecoration(
+                color: _getTeamColor(state.currentTeam.color).withOpacity(0.15),
+                border: Border(
+                  bottom: BorderSide(
+                    color: _getTeamColor(
+                      state.currentTeam.color,
+                    ).withOpacity(0.3),
+                    width: 2,
+                  ),
+                ),
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -622,6 +633,64 @@ class _GameScreenState extends ConsumerState<GameScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildNeonGlow(GameState state) {
+    final teamColor = _getTeamColor(state.currentTeam.color);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // BoardComponent.dart의 _updateLayout 로직과 동일하게 크기 계산 (화면 중앙 배치)
+        final minDim = constraints.maxWidth < constraints.maxHeight
+            ? constraints.maxWidth
+            : constraints.maxHeight;
+        final boardDimension = minDim * 0.85;
+
+        return Center(
+          child: TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0.0, end: 1.0),
+            duration: const Duration(seconds: 2),
+            builder: (context, value, child) {
+              final pulse = (0.5 - (value - 0.5).abs() * 2);
+              final opacity = 0.4 + (0.4 * pulse); // 0.4 ~ 0.8
+              final glowScale = 1.0 + (0.2 * pulse);
+
+              return IgnorePointer(
+                child: Container(
+                  width: boardDimension,
+                  height: boardDimension,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    // 선(Border)을 제거하여 보드 내부 침범 방지
+                    boxShadow: [
+                      // 1. 초대형 외부 아우라 (두껍게 퍼짐)
+                      BoxShadow(
+                        color: teamColor.withOpacity(opacity * 0.3),
+                        blurRadius: 60 * glowScale,
+                        spreadRadius: 25, // 두껍게 밖으로 확장
+                      ),
+                      // 2. 중간 광채 (존재감)
+                      BoxShadow(
+                        color: teamColor.withOpacity(opacity * 0.6),
+                        blurRadius: 30 * glowScale,
+                        spreadRadius: 10,
+                      ),
+                      // 3. 소프트 엣지 (보드 경계면 발광)
+                      BoxShadow(
+                        color: teamColor.withOpacity(opacity),
+                        blurRadius: 15 * glowScale,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            onEnd: () {},
+          ),
+        );
+      },
     );
   }
 
