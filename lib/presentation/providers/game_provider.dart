@@ -83,6 +83,7 @@ class GameNotifier extends StateNotifier<GameState> {
     final backDoFlying = prefs.getBool('backDoFlying') ?? false;
     final autoCarrier = prefs.getBool('autoCarrier') ?? false;
     final totalNak = prefs.getBool('totalNak') ?? false;
+    final roastedChestnutMode = prefs.getBool('roastedChestnutMode') ?? false;
     final aiDifficulty = prefs.getInt('aiDifficulty') ?? 5;
     final nakChancePercent = prefs.getInt('nakChancePercent') ?? 15;
 
@@ -92,6 +93,7 @@ class GameNotifier extends StateNotifier<GameState> {
       backDoFlying: backDoFlying,
       autoCarrier: autoCarrier,
       totalNak: totalNak,
+      roastedChestnutMode: roastedChestnutMode,
       aiDifficulty: aiDifficulty,
       nakChancePercent: nakChancePercent,
     );
@@ -111,6 +113,7 @@ class GameNotifier extends StateNotifier<GameState> {
     await prefs.setBool('backDoFlying', config.backDoFlying);
     await prefs.setBool('autoCarrier', config.autoCarrier);
     await prefs.setBool('totalNak', config.totalNak);
+    await prefs.setBool('roastedChestnutMode', config.roastedChestnutMode);
     await prefs.setInt('aiDifficulty', config.aiDifficulty);
     await prefs.setInt('nakChancePercent', config.nakChancePercent);
   }
@@ -348,11 +351,19 @@ class GameNotifier extends StateNotifier<GameState> {
         node?.shortcutNextId != null && result != YutResult.backDo;
     final isDecisionPoint = (mal.currentNodeId == 5 || mal.currentNodeId == 10);
 
-    if (hasShortcut && isDecisionPoint && state.currentTeam.isHuman) {
-      state = state.copyWith(
-        selectedMalId: malId,
-        status: GameStatus.awaitingShortcutDecision,
-      );
+    if (hasShortcut && isDecisionPoint) {
+      if (state.activeConfig.roastedChestnutMode) {
+        // 군밤 모드: 지름길에서 항상 최단 거리 선택
+        moveMal(malId, result, useShortcut: true);
+      } else if (state.currentTeam.isHuman) {
+        state = state.copyWith(
+          selectedMalId: malId,
+          status: GameStatus.awaitingShortcutDecision,
+        );
+      } else {
+        // AI or non-human handles it in aiSelectAndMove
+        moveMal(malId, result, useShortcut: true);
+      }
     } else {
       moveMal(malId, result);
     }

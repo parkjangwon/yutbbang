@@ -283,6 +283,18 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                 _localConfig = _localConfig.copyWith(totalNak: val);
               }),
             ),
+            SwitchListTile(
+              title: const Text(
+                '군밤 모드 🌰',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text('지름길 구간에서 항상 최단 거리로 이동합니다.'),
+              value: config.roastedChestnutMode,
+              activeColor: Colors.brown,
+              onChanged: (val) => setState(() {
+                _localConfig = _localConfig.copyWith(roastedChestnutMode: val);
+              }),
+            ),
             const Divider(height: 40),
             const Text(
               '낙 확률 설정',

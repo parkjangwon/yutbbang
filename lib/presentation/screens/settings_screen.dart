@@ -143,6 +143,17 @@ class SettingsScreen extends ConsumerWidget {
               gameNotifier.updateConfig(config.copyWith(totalNak: val));
             },
           ),
+          SwitchListTile(
+            title: const Text('군밤 모드 🌰'),
+            subtitle: const Text('지름길 구간에서 항상 최단 거리로 이동합니다.'),
+            value: config.roastedChestnutMode,
+            activeColor: Colors.brown,
+            onChanged: (val) {
+              gameNotifier.updateConfig(
+                config.copyWith(roastedChestnutMode: val),
+              );
+            },
+          ),
           const Divider(height: 40),
           ListTile(
             title: const Text('윷놀이 가이드'),
