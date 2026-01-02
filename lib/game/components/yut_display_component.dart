@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../domain/models/yut_result.dart';
 
 class StickConfig {
@@ -91,6 +92,9 @@ class YutDisplayComponent extends PositionComponent with HasGameRef, HasPaint {
 
     _isAnimating = true;
     _animationTime = 0.0;
+
+    // Haptic feedback: Throw start
+    HapticFeedback.heavyImpact();
 
     final centerX = gameRef.size.x / 2;
 
@@ -200,6 +204,10 @@ class YutDisplayComponent extends PositionComponent with HasGameRef, HasPaint {
 
     if (_animationTime >= throwDuration) {
       _isAnimating = false;
+
+      // Haptic feedback: Landing
+      HapticFeedback.heavyImpact();
+
       for (var s in _sticks) {
         s.velocity = Vector2.zero();
         s.angularVelocity = 0;

@@ -580,11 +580,11 @@ class GameNotifier extends StateNotifier<GameState> {
 
     if (caughtOpponent) {
       if (catcherHuman) {
-        HapticFeedback.mediumImpact();
+        HapticFeedback.heavyImpact();
         _triggerCaptureSound();
       }
       if (caughtHuman) {
-        HapticFeedback.lightImpact();
+        HapticFeedback.heavyImpact();
         _triggerCaptureSound();
       }
       state = state.copyWith(
@@ -673,7 +673,7 @@ class GameNotifier extends StateNotifier<GameState> {
         HapticFeedback.heavyImpact();
         break;
       case YutResult.backDo:
-        HapticFeedback.selectionClick();
+        HapticFeedback.heavyImpact();
         break;
       default:
         break;
