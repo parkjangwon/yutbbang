@@ -589,7 +589,7 @@ class GameNotifier extends StateNotifier<GameState> {
       }
       state = state.copyWith(
         status: GameStatus.throwing,
-        lastResult: null, // Clear 'Catcher' result text before bonus throw
+        // lastResult: null, // Keep status text visible longer to avoid flicker
       );
       if (!state.currentTeam.isHuman)
         Future.delayed(const Duration(milliseconds: 1500), () => throwYut());
@@ -609,7 +609,7 @@ class GameNotifier extends StateNotifier<GameState> {
     } else {
       state = state.copyWith(
         status: GameStatus.selectingMal,
-        lastResult: null, // Clear result text when transitioning to selection
+        // lastResult: null, // Keep previous result status until it actually changes
       );
       if (!state.currentTeam.isHuman) {
         Future.delayed(
@@ -659,7 +659,7 @@ class GameNotifier extends StateNotifier<GameState> {
       status: GameStatus.throwing,
       movingMalId: null,
       currentPath: [],
-      lastResult: null, // Explicitly clear for the new player
+      // lastResult: null, // Removed: clearing here ruins continuity
       selectedMalId: null,
     );
     if (!state.currentTeam.isHuman)

@@ -62,7 +62,13 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     ],
                   ),
                   // 상태 텍스트 (선택 또는 결과)
-                  Expanded(child: Center(child: _buildStatusText(state))),
+                  Expanded(
+                    child: Container(
+                      height: 50, // Fixed height to prevent layout jump
+                      alignment: Alignment.center,
+                      child: _buildStatusText(state),
+                    ),
+                  ),
                   _buildCloseButton(),
                 ],
               ),
@@ -73,7 +79,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
               child: Stack(
                 children: [
                   // Flame 게임
-                  GameWidget(game: YutGame(ref)),
+                  GameWidget(game: _game),
 
                   // 지름길 선택 오버레이
                   if (state.status == GameStatus.awaitingShortcutDecision &&
