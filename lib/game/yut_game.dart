@@ -36,7 +36,10 @@ class YutGame extends FlameGame {
 
       final yutDisplay = children.whereType<YutDisplayComponent>().firstOrNull;
       if (yutDisplay != null) {
-        yutDisplay.updateSticks(gameState.lastStickStates);
+        yutDisplay.updateSticks(
+          gameState.lastStickStates,
+          gameState.lastResult,
+        );
         yutDisplay.opacity =
             (gameState.status == GameStatus.throwing ||
                 gameState.status == GameStatus.selectingMal ||

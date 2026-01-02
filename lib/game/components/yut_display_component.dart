@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import '../../domain/models/yut_result.dart';
 
 class StickConfig {
   Vector2 position;
@@ -70,7 +71,7 @@ class YutDisplayComponent extends PositionComponent with HasGameRef, HasPaint {
     });
   }
 
-  void updateSticks(List<bool> newStickStates) {
+  void updateSticks(List<bool> newStickStates, YutResult? result) {
     if (newStickStates.isEmpty) {
       _lastProcessedStates = null;
       _isAnimating = false;
@@ -105,25 +106,45 @@ class YutDisplayComponent extends PositionComponent with HasGameRef, HasPaint {
     // Use slots to guarantee NO OVERLAP
     List<int> slots = [0, 1, 2, 3]..shuffle(_random);
 
+    // Nak special: one stick flies off-screen
+    final isNak = result?.isFail ?? false;
+    final nakStickIndex = isNak ? _random.nextInt(4) : -1;
+
     for (int i = 0; i < 4; i++) {
       _sticks[i].position = Vector2(centerX + (i - 1.5) * 45, startY);
       _sticks[i].angle = 0.0;
       _sticks[i].isFlat = newStickStates[i];
 
-      // Fixed landing slots
-      final slotX = centerX + (slots[i] - 1.5) * 65;
-      _sticks[i].targetPosition = Vector2(
-        slotX,
-        targetY + (_random.nextDouble() - 0.5) * 60,
-      );
+      if (i == nakStickIndex) {
+        // This stick flies off-screen
+        final offScreenX = _random.nextBool()
+            ? -100.0 // Left side
+            : gameRef.size.x + 100.0; // Right side
+        final offScreenY = gameRef.size.y + 200.0; // Below screen
 
-      _sticks[i].velocity = Vector2(
-        (_sticks[i].targetPosition.x - _sticks[i].position.x) / throwDuration,
-        -800.0,
-      );
+        _sticks[i].targetPosition = Vector2(offScreenX, offScreenY);
+        _sticks[i].velocity = Vector2(
+          (offScreenX - _sticks[i].position.x) / throwDuration,
+          -600.0, // Lower arc
+        );
+        _sticks[i].angularVelocity =
+            (_random.nextDouble() * 20 + 15) * (_random.nextBool() ? 1 : -1);
+      } else {
+        // Normal landing
+        final slotX = centerX + (slots[i] - 1.5) * 65;
+        _sticks[i].targetPosition = Vector2(
+          slotX,
+          targetY + (_random.nextDouble() - 0.5) * 60,
+        );
 
-      _sticks[i].angularVelocity =
-          (_random.nextDouble() * 10 + 10) * (_random.nextBool() ? 1 : -1);
+        _sticks[i].velocity = Vector2(
+          (_sticks[i].targetPosition.x - _sticks[i].position.x) / throwDuration,
+          -800.0,
+        );
+        _sticks[i].angularVelocity =
+            (_random.nextDouble() * 10 + 10) * (_random.nextBool() ? 1 : -1);
+      }
+
       _sticks[i].targetAngle = _sticks[i].isFlat ? pi : 0.0;
     }
   }
