@@ -221,7 +221,11 @@ class GameNotifier extends StateNotifier<GameState> {
   void startGauge() {
     if (state.status != GameStatus.throwing || state.isGaugeRunning) return;
     if (!state.currentTeam.isHuman) {
-      throwYut();
+      // CPU는 게이지 UI를 건너뛰지만, 확률 기반 낙은 적용
+      final nakChance = state.activeConfig.nakChancePercent / 100.0;
+      final random = Random();
+      final forceNak = random.nextDouble() < nakChance;
+      throwYut(forceNak: forceNak);
       return;
     }
 
