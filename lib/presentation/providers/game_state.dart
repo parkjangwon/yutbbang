@@ -50,6 +50,7 @@ class GameState {
   // New item-related states
   final bool isFixedDiceActive;
   final String? itemMessage;
+  final String? bonusMessage; // 추가: 보너스 턴 알림 메시지
 
   GameState({
     required this.config,
@@ -78,6 +79,7 @@ class GameState {
     this.justAcquiredItemTeamName,
     this.isFixedDiceActive = false,
     this.itemMessage,
+    this.bonusMessage,
   });
 
   Team get currentTeam => teams[turnIndex % teams.length];
@@ -111,6 +113,7 @@ class GameState {
     Object? justAcquiredItemTeamName = _unset,
     bool? isFixedDiceActive,
     Object? itemMessage = _unset,
+    Object? bonusMessage = _unset,
   }) {
     return GameState(
       config: config ?? this.config,
@@ -151,6 +154,9 @@ class GameState {
       itemMessage: itemMessage == _unset
           ? this.itemMessage
           : itemMessage as String?,
+      bonusMessage: bonusMessage == _unset
+          ? this.bonusMessage
+          : bonusMessage as String?,
     );
   }
 }

@@ -297,6 +297,15 @@ class GameNotifier extends StateNotifier<GameState> {
     });
   }
 
+  void _displayBonusTurn(String message) {
+    state = state.copyWith(bonusMessage: message);
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      if (mounted && state.bonusMessage == message) {
+        state = state.copyWith(bonusMessage: null);
+      }
+    });
+  }
+
   void useItem(ItemType itemType) {
     final teamIndex = state.turnIndex % state.teams.length;
     final team = state.teams[teamIndex];
@@ -796,6 +805,7 @@ class GameNotifier extends StateNotifier<GameState> {
     }
 
     if (actualResult.isBonusTurn) {
+      _displayBonusTurn("한번 더!");
       state = state.copyWith(
         currentThrows: newThrows,
         status: GameStatus.throwing,
@@ -1345,6 +1355,7 @@ class GameNotifier extends StateNotifier<GameState> {
         HapticFeedback.heavyImpact();
         _triggerCaptureSound();
       }
+      _displayBonusTurn("상대 말을 잡았습니다! 한번 더! 🎯");
       state = state.copyWith(
         status: GameStatus.throwing,
         // lastResult: null, // Keep status text visible longer to avoid flicker

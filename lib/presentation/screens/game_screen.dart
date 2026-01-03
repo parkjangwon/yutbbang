@@ -104,7 +104,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                   // 상태 텍스트 (선택 또는 결과)
                   Expanded(
                     child: Container(
-                      height: 60, // Fixed height to prevent layout jump
+                      height: 70, // Increased to give more vertical space
                       alignment: Alignment.center,
                       child: _buildStatusText(state),
                     ),
@@ -176,42 +176,18 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                       left: 0,
                       right: 0,
                       child: Center(
-                        child: TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0.0, end: 1.0),
-                          duration: const Duration(milliseconds: 300),
-                          builder: (context, value, child) {
-                            return Opacity(
-                              opacity: value,
-                              child: Transform.translate(
-                                offset: Offset(0, (1 - value) * -20),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black87,
-                                    borderRadius: BorderRadius.circular(30),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.3),
-                                        blurRadius: 10,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Text(
-                                    state.itemMessage!,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                        child: _buildToastMessage(state.itemMessage!),
+                      ),
+                    ),
+
+                  // 보너스 알림 메시지 (말풍선 스타일)
+                  if (state.bonusMessage != null)
+                    Positioned(
+                      top: MediaQuery.of(context).size.height * 0.35,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: _buildBonusMessageOverlay(state.bonusMessage!),
                       ),
                     ),
                 ],
@@ -223,6 +199,93 @@ class _GameScreenState extends ConsumerState<GameScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildToastMessage(String message) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 300),
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * -20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBonusMessageOverlay(String message) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.elasticOut,
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: 0.8 + (value * 0.2),
+          child: Opacity(
+            opacity: value.clamp(0.0, 1.0),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Colors.orangeAccent, Colors.deepOrange],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.orange.withOpacity(0.5),
+                    blurRadius: 20,
+                    spreadRadius: 5,
+                  ),
+                ],
+                border: Border.all(color: Colors.white, width: 3),
+              ),
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black45,
+                      offset: Offset(2, 2),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -452,7 +515,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       children: [
         // First line: Result (or empty space)
         SizedBox(
-          height: 20,
+          height: 24, // Increased height
           child: resultText != null
               ? Text(
                   resultText,
@@ -461,7 +524,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     fontWeight: FontWeight.bold,
                     fontSize: 17,
                     letterSpacing: 0.5,
-                    height: 1.0,
+                    height: 1.2, // Improved line height
                     shadows: [
                       Shadow(
                         color: Colors.black.withOpacity(0.3),
@@ -475,10 +538,10 @@ class _GameScreenState extends ConsumerState<GameScreen> {
               : const SizedBox.shrink(),
         ),
         // Spacing between lines (only if both exist)
-        if (resultText != null && guideText != null) const SizedBox(height: 4),
+        if (resultText != null && guideText != null) const SizedBox(height: 6),
         // Second line: Guide (or empty space)
         SizedBox(
-          height: 20,
+          height: 22, // Increased height
           child: guideText != null
               ? Text(
                   guideText,
@@ -487,7 +550,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                     letterSpacing: 0.3,
-                    height: 1.0,
+                    height: 1.2, // Improved line height
                     shadows: [
                       Shadow(
                         color: Colors.white.withOpacity(0.8),
