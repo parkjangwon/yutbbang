@@ -288,6 +288,15 @@ class GameNotifier extends StateNotifier<GameState> {
     );
   }
 
+  void _displayItemMessage(String message) {
+    state = state.copyWith(itemMessage: message);
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (mounted && state.itemMessage == message) {
+        state = state.copyWith(itemMessage: null);
+      }
+    });
+  }
+
   void useItem(ItemType itemType) {
     final teamIndex = state.turnIndex % state.teams.length;
     final team = state.teams[teamIndex];
@@ -298,49 +307,55 @@ class GameNotifier extends StateNotifier<GameState> {
     // 내 턴이 아니면 사용 불가
     if (!state.currentTeam.isHuman) return;
 
+    bool success = false;
     // 아이템별 사용 로직
     switch (itemType) {
       case ItemType.reroll:
-        _useReroll(teamIndex);
+        success = _useReroll(teamIndex);
         break;
       case ItemType.shield:
         // Shield는 자동 적용되므로 수동 사용 불가
         return;
       case ItemType.magnet:
-        _useMagnet(teamIndex);
+        success = _useMagnet(teamIndex);
         break;
       case ItemType.moonwalk:
         // 뒷걸음질은 자동 발동되므로 수동 사용 불가
         return;
       case ItemType.typhoon:
-        _useTyphoon(teamIndex);
+        success = _useTyphoon(teamIndex);
         break;
       case ItemType.banish:
-        _useBanish(teamIndex);
+        success = _useBanish(teamIndex);
         break;
       case ItemType.freeze:
-        _useFreeze(teamIndex);
+        success = _useFreeze(teamIndex);
         break;
       case ItemType.swap:
-        _useSwap(teamIndex);
+        success = _useSwap(teamIndex);
         break;
       case ItemType.fixedDice:
-        _useFixedDice(teamIndex);
+        success = _useFixedDice(teamIndex);
         break;
     }
 
-    // 아이템 제거
-    final newItems = List<ItemType>.from(team.items)..remove(itemType);
-    final nextTeams = List<Team>.from(state.teams);
-    nextTeams[teamIndex] = team.copyWith(items: newItems);
-    state = state.copyWith(teams: nextTeams);
+    if (success) {
+      // 사용 성공 시에만 아이템 제거
+      final currentTeams = List<Team>.from(state.teams);
+      final currentTeam = currentTeams[teamIndex];
+      final newItems = List<ItemType>.from(currentTeam.items)..remove(itemType);
+      currentTeams[teamIndex] = currentTeam.copyWith(items: newItems);
+      state = state.copyWith(teams: currentTeams);
+    }
   }
 
-  void _useReroll(int teamIndex) {
+  bool _useReroll(int teamIndex) {
     // 다시 던지기: 현재 결과 무시하고 다시 던지기
     if (state.status != GameStatus.selectingMal &&
-        state.status != GameStatus.throwing)
-      return;
+        state.status != GameStatus.throwing) {
+      _displayItemMessage("지금은 다시 던지기를 사용할 수 없습니다.");
+      return false;
+    }
 
     state = state.copyWith(
       currentThrows: [],
@@ -348,14 +363,22 @@ class GameNotifier extends StateNotifier<GameState> {
       status: GameStatus.throwing,
       selectedMalId: null,
     );
+    _displayItemMessage("다시 던지기! 윷을 다시 던집니다.");
+    return true;
   }
 
-  void _useMagnet(int teamIndex) {
+  bool _useMagnet(int teamIndex) {
     // 자석: 내 말 앞 3칸 이내 상대 말 잡기
     final team = state.teams[teamIndex];
     final nextTeams = List<Team>.from(state.teams);
 
     bool caughtAny = false;
+
+    // 내 말이 판 위에 있는지 확인
+    if (team.mals.every((m) => m.currentNodeId == null || m.isFinished)) {
+      _displayItemMessage("판 위에 내 말이 있어야 자석을 사용할 수 있습니다.");
+      return false;
+    }
 
     // 내 말들의 위치 확인
     for (final myMal in team.mals) {
@@ -390,6 +413,11 @@ class GameNotifier extends StateNotifier<GameState> {
     if (caughtAny) {
       state = state.copyWith(teams: nextTeams);
       HapticFeedback.heavyImpact();
+      _displayItemMessage("자석으로 상대 말을 끌어당겼습니다!");
+      return true;
+    } else {
+      _displayItemMessage("주변에 잡을 상대 말이 없습니다.");
+      return false;
     }
   }
 
@@ -418,50 +446,67 @@ class GameNotifier extends StateNotifier<GameState> {
     return result.toList();
   }
 
-  void _useTyphoon(int teamIndex) {
-    // 태풍: 모든 말 위치 섞기
-    final random = Random();
-    final nextTeams = List<Team>.from(state.teams);
+  bool _useTyphoon(int teamIndex) {
+    // 태풍: 모든 말의 위치를 랜덤하게 섞음
+    final allMalsOnBoard = state.teams
+        .expand((t) => t.mals)
+        .where((m) => m.currentNodeId != null && !m.isFinished)
+        .toList();
 
-    // 모든 팀의 말 위치 수집 (완주하지 않은 말만)
-    final allPositions = <int>[];
-    for (var team in nextTeams) {
-      for (var mal in team.mals) {
-        if (mal.currentNodeId != null && !mal.isFinished) {
-          allPositions.add(mal.currentNodeId!);
-        }
-      }
+    if (allMalsOnBoard.isEmpty) {
+      _displayItemMessage("판 위에 말이 없어서 태풍을 사용할 수 없습니다.");
+      return false;
     }
 
-    // 위치 섞기
-    allPositions.shuffle(random);
+    final random = Random();
+    final allNodes = BoardGraph.nodes.keys.toList();
+    final nextTeams = List<Team>.from(state.teams);
 
-    // 다시 배치
-    int posIndex = 0;
     for (int i = 0; i < nextTeams.length; i++) {
       final team = nextTeams[i];
-      final newMals = team.mals.map((mal) {
-        if (mal.currentNodeId != null && !mal.isFinished) {
-          final newNodeId = allPositions[posIndex++];
-          return mal.copyWith(
+      final newMals = team.mals.map((m) {
+        if (m.currentNodeId != null && !m.isFinished) {
+          final newNodeId = allNodes[random.nextInt(allNodes.length)];
+          return m.copyWith(
             currentNodeId: newNodeId,
             historyNodeIds: [newNodeId],
           );
         }
-        return mal;
+        return m;
       }).toList();
       nextTeams[i] = team.copyWith(mals: newMals);
     }
 
     state = state.copyWith(teams: nextTeams);
     HapticFeedback.heavyImpact();
+    _displayItemMessage("태풍이 몰아쳐 말들의 위치가 뒤섞였습니다!");
+    return true;
   }
 
-  void _useBanish(int teamIndex) {
+  bool _useBanish(int teamIndex) {
+    // 상대 말 하나를 강제로 시작점으로 보냄
+    bool hasOpponentOnBoard = false;
+    for (int i = 0; i < state.teams.length; i++) {
+      if (i == teamIndex) continue;
+      if (state.teams[i].mals.any(
+        (m) => m.currentNodeId != null && !m.isFinished,
+      )) {
+        hasOpponentOnBoard = true;
+        break;
+      }
+    }
+
+    if (!hasOpponentOnBoard) {
+      _displayItemMessage("시작점으로 보낼 상대 말이 없습니다.");
+      return false;
+    }
+
     state = state.copyWith(status: GameStatus.awaitingBanishTarget);
+    _displayItemMessage("시작점으로 보낼 상대 말을 선택하세요.");
+    return true;
   }
 
-  void _useFreeze(int teamIndex) {
+  bool _useFreeze(int teamIndex) {
     // 다음 상대방 팀 턴 스킵 설정
     final nextTeams = List<Team>.from(state.teams);
     final nextTargetIndex = (teamIndex + 1) % nextTeams.length;
@@ -469,17 +514,55 @@ class GameNotifier extends StateNotifier<GameState> {
       skipNextTurn: true,
     );
     state = state.copyWith(teams: nextTeams);
+    _displayItemMessage("얼음탄! 상대의 다음 턴을 얼렸습니다.");
+    return true;
   }
 
-  void _useSwap(int teamIndex) {
+  bool _useSwap(int teamIndex) {
+    // 내 말과 상대 말의 위치를 바꿈
+    bool hasMyMal = state.teams[teamIndex].mals.any(
+      (m) => m.currentNodeId != null && !m.isFinished,
+    );
+    bool hasOpponentMal = false;
+    for (int i = 0; i < state.teams.length; i++) {
+      if (i == teamIndex) continue;
+      if (state.teams[i].mals.any(
+        (m) => m.currentNodeId != null && !m.isFinished,
+      )) {
+        hasOpponentMal = true;
+        break;
+      }
+    }
+
+    if (!hasMyMal) {
+      _displayItemMessage("위치를 바꿀 내 말이 판 위에 없습니다.");
+      return false;
+    }
+    if (!hasOpponentMal) {
+      _displayItemMessage("위치를 바꿀 상대 말이 판 위에 없습니다.");
+      return false;
+    }
+
     state = state.copyWith(
       status: GameStatus.awaitingSwapSource,
       selectedMalId: null,
     );
+    _displayItemMessage("위치를 바꿀 내 말을 먼저 선택하세요.");
+    return true;
   }
 
-  void _useFixedDice(int teamIndex) {
+  bool _useFixedDice(int teamIndex) {
+    if (state.status != GameStatus.throwing) {
+      _displayItemMessage("지금은 황금 윷을 사용할 수 없습니다.");
+      return false;
+    }
+    if (state.isFixedDiceActive) {
+      _displayItemMessage("이미 황금 윷 효과가 활성화되어 있습니다.");
+      return false;
+    }
     state = state.copyWith(isFixedDiceActive: true);
+    _displayItemMessage("황금 윷 활성화! 다음 던지기는 '윷' 이상 확정입니다.");
+    return true;
   }
 
   void handleMalSelectionForItem(int malId) {

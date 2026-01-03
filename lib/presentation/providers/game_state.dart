@@ -49,6 +49,7 @@ class GameState {
 
   // New item-related states
   final bool isFixedDiceActive;
+  final String? itemMessage;
 
   GameState({
     required this.config,
@@ -76,6 +77,7 @@ class GameState {
     this.justAcquiredItem,
     this.justAcquiredItemTeamName,
     this.isFixedDiceActive = false,
+    this.itemMessage,
   });
 
   Team get currentTeam => teams[turnIndex % teams.length];
@@ -108,6 +110,7 @@ class GameState {
     Object? justAcquiredItem = _unset,
     Object? justAcquiredItemTeamName = _unset,
     bool? isFixedDiceActive,
+    Object? itemMessage = _unset,
   }) {
     return GameState(
       config: config ?? this.config,
@@ -145,6 +148,9 @@ class GameState {
           ? this.justAcquiredItemTeamName
           : justAcquiredItemTeamName as String?,
       isFixedDiceActive: isFixedDiceActive ?? this.isFixedDiceActive,
+      itemMessage: itemMessage == _unset
+          ? this.itemMessage
+          : itemMessage as String?,
     );
   }
 }
