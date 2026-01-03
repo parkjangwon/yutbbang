@@ -48,16 +48,31 @@ class PathFinder {
             // Handle intersection at node 20 (Center)
             if (currentId == 20) {
               if (i == 0) {
-                // Starting move from Center: Default to finish path (27)
-                nextId = 27;
+                // Starting move from Center:
+                // Only allow turning (27) if coming from Node 5 path (22) AND user explicitly picks shortcut.
+                final entryId =
+                    (previousNodeIds != null && previousNodeIds.isNotEmpty)
+                    ? previousNodeIds.last
+                    : null;
+
+                if (entryId == 22) {
+                  // Came from Top-Right corner path
+                  nextId = useShortcut ? 27 : 23;
+                } else if (entryId == 26) {
+                  // Came from Top-Left corner path: already on shortcut, keep going straight to 27
+                  nextId = 27;
+                } else {
+                  // Default/Fallthrough
+                  nextId = 27;
+                }
               } else {
-                // Passing through Center: Determine straight path based on entry node
-                final prevId = path[i - 1];
+                // Passing through Center: MUST go straight according to entry vector.
+                final prevId = i >= 2 ? path[i - 2] : startId;
                 if (prevId == 26) {
-                  // Line 10 -> 25 -> 26 -> 20 -> 27 -> 28 -> 0 (Straight)
+                  // 10 -> 25 -> 26 -> 20 -> 27 (Straight)
                   nextId = 27;
                 } else if (prevId == 22) {
-                  // Line 5 -> 21 -> 22 -> 20 -> 23 -> 24 -> 15 (Straight)
+                  // 5 -> 21 -> 22 -> 20 -> 23 (Straight)
                   nextId = 23;
                 }
               }
