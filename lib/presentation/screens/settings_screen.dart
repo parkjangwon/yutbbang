@@ -13,7 +13,7 @@ class SettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('시스템 설정'),
+        title: const Text('기본 설정'),
         backgroundColor: Colors.brown,
         foregroundColor: Colors.white,
       ),
@@ -40,6 +40,25 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           Text('현재 난이도: ${config.aiDifficulty}', textAlign: TextAlign.center),
+          const Divider(height: 40),
+          const Text(
+            '게임당 말',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          Slider(
+            value: config.malCount.toDouble(),
+            min: 2,
+            max: 5,
+            divisions: 3,
+            label: config.malCount.toString(),
+            activeColor: Colors.brown,
+            thumbColor: Colors.brown,
+            onChanged: (val) {
+              gameNotifier.updateConfig(config.copyWith(malCount: val.toInt()));
+            },
+          ),
+          const SizedBox(height: 10),
+          Text('현재 말 개수: ${config.malCount}', textAlign: TextAlign.center),
           const Divider(height: 40),
           const Text(
             '낙 확률',

@@ -69,7 +69,7 @@ class LobbyScreen extends ConsumerWidget {
                   );
                 },
                 child: const Text(
-                  '게임 설정',
+                  '기본 설정',
                   style: TextStyle(color: Colors.white, fontSize: 18),
                 ),
               ),

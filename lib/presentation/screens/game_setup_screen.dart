@@ -181,37 +181,73 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
             }),
             const Divider(height: 40),
             const Text(
-              '게임 말 수 설정',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.brown,
-              ),
+              '게임당 말',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            _SettingsRow(
-              label: '팀당 말 수',
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Slider(
-                      value: config.malCount.toDouble(),
-                      min: 2,
-                      max: 5,
-                      divisions: 3,
-                      activeColor: Colors.brown,
-                      onChanged: (val) => setState(() {
+            Slider(
+              value: config.malCount.toDouble(),
+              min: 2,
+              max: 5,
+              divisions: 3,
+              label: config.malCount.toString(),
+              activeColor: Colors.brown,
+              thumbColor: Colors.brown,
+              onChanged: (val) => setState(() {
+                _localConfig = _localConfig.copyWith(malCount: val.toInt());
+              }),
+            ),
+            const SizedBox(height: 10),
+            Text('현재 말 개수: ${config.malCount}', textAlign: TextAlign.center),
+            const Divider(height: 40),
+            const Text(
+              '낙 확률',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _buildNakChoice(
+                  label: '쉬움',
+                  percent: 10,
+                  selected: config.nakChancePercent == 10,
+                  onSelected: (selected) {
+                    if (selected)
+                      setState(() {
                         _localConfig = _localConfig.copyWith(
-                          malCount: val.toInt(),
+                          nakChancePercent: 10,
                         );
-                      }),
-                    ),
-                  ),
-                  Text(
-                    '${config.malCount}개',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
+                      });
+                  },
+                ),
+                const SizedBox(width: 8),
+                _buildNakChoice(
+                  label: '보통',
+                  percent: 15,
+                  selected: config.nakChancePercent == 15,
+                  onSelected: (selected) {
+                    if (selected)
+                      setState(() {
+                        _localConfig = _localConfig.copyWith(
+                          nakChancePercent: 15,
+                        );
+                      });
+                  },
+                ),
+                const SizedBox(width: 8),
+                _buildNakChoice(
+                  label: '어려움',
+                  percent: 25,
+                  selected: config.nakChancePercent == 25,
+                  onSelected: (selected) {
+                    if (selected)
+                      setState(() {
+                        _localConfig = _localConfig.copyWith(
+                          nakChancePercent: 25,
+                        );
+                      });
+                  },
+                ),
+              ],
             ),
             const Divider(height: 40),
             SwitchListTile(
@@ -294,63 +330,6 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
               onChanged: (val) => setState(() {
                 _localConfig = _localConfig.copyWith(roastedChestnutMode: val);
               }),
-            ),
-            const Divider(height: 40),
-            const Text(
-              '낙 확률 설정',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.brown,
-              ),
-            ),
-            _SettingsRow(
-              label: '낙 확률',
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: [
-                  _buildNakChoice(
-                    label: '쉬움',
-                    percent: 10,
-                    selected: config.nakChancePercent == 10,
-                    onSelected: (selected) {
-                      if (selected)
-                        setState(() {
-                          _localConfig = _localConfig.copyWith(
-                            nakChancePercent: 10,
-                          );
-                        });
-                    },
-                  ),
-                  _buildNakChoice(
-                    label: '보통',
-                    percent: 15,
-                    selected: config.nakChancePercent == 15,
-                    onSelected: (selected) {
-                      if (selected)
-                        setState(() {
-                          _localConfig = _localConfig.copyWith(
-                            nakChancePercent: 15,
-                          );
-                        });
-                    },
-                  ),
-                  _buildNakChoice(
-                    label: '어려움',
-                    percent: 25,
-                    selected: config.nakChancePercent == 25,
-                    onSelected: (selected) {
-                      if (selected)
-                        setState(() {
-                          _localConfig = _localConfig.copyWith(
-                            nakChancePercent: 25,
-                          );
-                        });
-                    },
-                  ),
-                ],
-              ),
             ),
             const SizedBox(height: 50),
             SizedBox(
