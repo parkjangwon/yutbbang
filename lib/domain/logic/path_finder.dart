@@ -44,6 +44,24 @@ class PathFinder {
             nextId = node.shortcutNextId;
           } else {
             nextId = node.nextId;
+
+            // 추가: 가운데(20번) 노드를 '통과'할 때의 방향 유지 로직
+            if (currentId == 20) {
+              if (i > 0) {
+                // 통과 중인 경우: 들어온 방향에 따라 직진
+                final prevId = (i == 1) ? startId : path[i - 2];
+                if (prevId == 22) {
+                  // 1꼭짓점에서 온 대각선 -> 15번 방향(23)으로 직진
+                  nextId = node.shortcutNextId ?? 23;
+                } else if (prevId == 26) {
+                  // 2꼭짓점에서 온 대각선 -> 완료 방향(27)으로 직진
+                  nextId = 27;
+                }
+              } else {
+                // 가운데에서 '출발'하는 경우: 사용자의 규칙에 따라 무조건 완주 방향(27)
+                nextId = 27;
+              }
+            }
           }
         }
       }

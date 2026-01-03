@@ -103,6 +103,7 @@ class BoardGraph {
       x: 0.5,
       y: 0.5,
       nextId: 27, // 10 -> 20 -> 0 대각선 완주 방향 (기본)
+      shortcutNextId: 23, // 5 -> 20 -> 15 대각선 직진 방향
       prevId: 22,
     ); // Center
     map[23] = const BoardNode(id: 23, x: 0.35, y: 0.65, nextId: 24, prevId: 20);
