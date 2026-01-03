@@ -43,6 +43,7 @@ class Team {
   final List<Mal> mals;
   final int controllerId; // 0 = CPU, 1-4 = Player
   final bool isHuman;
+  final bool hasForfeit; // 기권 여부
 
   Team({
     required this.name,
@@ -50,10 +51,11 @@ class Team {
     required this.mals,
     this.controllerId = 1,
     this.isHuman = true,
+    this.hasForfeit = false,
   });
 
   int get finishedCount => mals.where((m) => m.isFinished).length;
-  bool get isWinner => finishedCount == mals.length;
+  bool get isWinner => !hasForfeit && finishedCount == mals.length;
 
   Team copyWith({
     String? name,
@@ -61,6 +63,7 @@ class Team {
     List<Mal>? mals,
     int? controllerId,
     bool? isHuman,
+    bool? hasForfeit,
   }) {
     return Team(
       name: name ?? this.name,
@@ -68,6 +71,7 @@ class Team {
       mals: mals ?? this.mals,
       controllerId: controllerId ?? this.controllerId,
       isHuman: isHuman ?? this.isHuman,
+      hasForfeit: hasForfeit ?? this.hasForfeit,
     );
   }
 }

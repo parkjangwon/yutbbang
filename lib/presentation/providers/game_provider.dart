@@ -657,17 +657,112 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   void nextTurn() {
+    // 기권하지 않은 팀 찾기
+    final activeTeams = state.teams.where((t) => !t.hasForfeit).toList();
+
+    // 모든 팀이 기권했거나 승자가 나온 경우
+    if (activeTeams.isEmpty || activeTeams.length == 1) {
+      if (activeTeams.length == 1) {
+        // 남은 팀 1개면 승리 처리
+        final winnerIndex = state.teams.indexWhere((t) => !t.hasForfeit);
+        final nextTeams = List<Team>.from(state.teams);
+        final winner = nextTeams[winnerIndex];
+
+        final winnerMals = winner.mals.map((m) {
+          return m.copyWith(
+            currentNodeId: null,
+            lastNodeId: null,
+            historyNodeIds: [],
+            isFinished: true,
+          );
+        }).toList();
+
+        nextTeams[winnerIndex] = winner.copyWith(mals: winnerMals);
+        state = state.copyWith(teams: nextTeams, status: GameStatus.finished);
+      } else {
+        state = state.copyWith(status: GameStatus.finished);
+      }
+      return;
+    }
+
+    // 다음 기권하지 않은 팀 찾기
+    int nextTurnIndex = (state.turnIndex + 1) % state.teams.length;
+    int attempts = 0;
+
+    // 최대 팀 수만큼 시도하여 기권하지 않은 팀 찾기
+    while (state.teams[nextTurnIndex].hasForfeit &&
+        attempts < state.teams.length) {
+      nextTurnIndex = (nextTurnIndex + 1) % state.teams.length;
+      attempts++;
+    }
+
+    // 안전장치: 기권하지 않은 팀을 찾지 못한 경우
+    if (state.teams[nextTurnIndex].hasForfeit) {
+      state = state.copyWith(status: GameStatus.finished);
+      return;
+    }
+
     state = state.copyWith(
-      turnIndex: (state.turnIndex + 1) % state.teams.length,
+      turnIndex: nextTurnIndex,
       currentThrows: [],
       status: GameStatus.throwing,
       movingMalId: null,
       currentPath: [],
-      // lastResult: null, // Removed: clearing here ruins continuity
+      lastResult: null, // 턴 전환 시 이전 결과 제거
       selectedMalId: null,
     );
+
     if (!state.currentTeam.isHuman)
       Future.delayed(const Duration(milliseconds: 1500), () => throwYut());
+  }
+
+  void forfeit(int teamIndex) {
+    // 해당 팀을 기권 처리하고 모든 말을 게임판에서 제거
+    final nextTeams = List<Team>.from(state.teams);
+    final team = nextTeams[teamIndex];
+
+    // 모든 말을 제거 (currentNodeId = null, isFinished = false로 초기화)
+    final clearedMals = team.mals.map((m) {
+      return m.copyWith(
+        currentNodeId: null,
+        lastNodeId: null,
+        historyNodeIds: [],
+        isFinished: false,
+      );
+    }).toList();
+
+    nextTeams[teamIndex] = team.copyWith(hasForfeit: true, mals: clearedMals);
+
+    state = state.copyWith(teams: nextTeams, currentThrows: []);
+
+    // 기권하지 않은 팀 수 확인
+    final activeTeams = state.teams.where((t) => !t.hasForfeit).toList();
+
+    if (activeTeams.length == 1) {
+      // 남은 팀이 1개면 즉시 승리 처리
+      final winnerIndex = state.teams.indexWhere((t) => !t.hasForfeit);
+      final winner = state.teams[winnerIndex];
+
+      // 승리 팀의 모든 말을 완주 처리
+      final winnerMals = winner.mals.map((m) {
+        return m.copyWith(
+          currentNodeId: null,
+          lastNodeId: null,
+          historyNodeIds: [],
+          isFinished: true,
+        );
+      }).toList();
+
+      nextTeams[winnerIndex] = winner.copyWith(mals: winnerMals);
+
+      state = state.copyWith(teams: nextTeams, status: GameStatus.finished);
+    } else if (activeTeams.isEmpty) {
+      // 모든 팀이 기권한 경우 (이론상 발생하지 않아야 함)
+      state = state.copyWith(status: GameStatus.finished);
+    } else {
+      // 여러 팀이 남아있으면 게임 계속
+      nextTurn();
+    }
   }
 
   void _triggerThrowHaptics(YutResult result) {

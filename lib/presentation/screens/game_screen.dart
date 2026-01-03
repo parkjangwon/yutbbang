@@ -86,6 +86,15 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                       state.currentTeam.isHuman)
                     _buildShortcutChoiceUI(state),
 
+                  // 기권 버튼 (좌측 하단)
+                  if (state.currentTeam.isHuman &&
+                      state.status != GameStatus.finished)
+                    Positioned(
+                      bottom: 20,
+                      left: 20,
+                      child: _buildForfeitButton(state),
+                    ),
+
                   // 던지기 버튼 (우측 하단)
                   if (state.currentTeam.isHuman &&
                       state.status == GameStatus.throwing)
@@ -226,6 +235,83 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     );
   }
 
+  Widget _buildForfeitButton(GameState state) {
+    final isGameActive = state.status != GameStatus.finished;
+
+    return GestureDetector(
+      onTap: isGameActive ? () => _showForfeitDialog(state) : null,
+      child: Container(
+        width: 75,
+        height: 75,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isGameActive
+                ? [Colors.red.shade400, Colors.red.shade800]
+                : [Colors.grey.shade400, Colors.grey.shade600],
+          ),
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 15,
+              spreadRadius: 0,
+              color: isGameActive
+                  ? Colors.red.withOpacity(0.4)
+                  : Colors.grey.withOpacity(0.3),
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: Colors.white.withOpacity(0.4), width: 2),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.flag, color: Colors.white, size: 30),
+              const Text(
+                '기권',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showForfeitDialog(GameState state) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('기권 확인'),
+        content: Text(
+          '${state.currentTeam.name} 팀이 기권하시겠습니까?\n모든 말이 완주 처리되어 게임에서 제외됩니다.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              final teamIndex = state.turnIndex % state.teams.length;
+              ref.read(gameProvider.notifier).forfeit(teamIndex);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('기권'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCloseButton() {
     return Container(
       decoration: const BoxDecoration(
@@ -335,6 +421,27 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: state.teams.map((team) {
+          // 기권한 팀 처리
+          if (team.hasForfeit) {
+            return Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _getTeamColor(team.color).withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  '기권',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: _getTeamColor(team.color),
+                  ),
+                ),
+              ),
+            );
+          }
+
           final waitingMals = team.mals
               .where((m) => m.currentNodeId == null && !m.isFinished)
               .toList();
