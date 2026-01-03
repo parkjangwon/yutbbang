@@ -13,6 +13,7 @@ class GameRuleConfig {
   final bool autoCarrier; // 자동 임신: 중앙 도착 시 대기 중인 말 자동 업기
   final bool totalNak; // 전낙: 낙 시 해당 턴의 모든 이전 결과 무효화
   final bool roastedChestnutMode; // 군밤 모드: 지름길 구간에서 항상 최단 거리로 이동
+  final bool useItemMode; // 아이템 모드: 게임판에 아이템 타일 추가
   final List<int> teamControllers;
 
   const GameRuleConfig({
@@ -28,6 +29,7 @@ class GameRuleConfig {
     this.autoCarrier = false,
     this.totalNak = false,
     this.roastedChestnutMode = false,
+    this.useItemMode = false,
     this.teamControllers = const [1, 0, 0, 0],
   });
 
@@ -44,6 +46,7 @@ class GameRuleConfig {
     bool? autoCarrier,
     bool? totalNak,
     bool? roastedChestnutMode,
+    bool? useItemMode,
     List<int>? teamControllers,
   }) {
     return GameRuleConfig(
@@ -59,6 +62,7 @@ class GameRuleConfig {
       autoCarrier: autoCarrier ?? this.autoCarrier,
       totalNak: totalNak ?? this.totalNak,
       roastedChestnutMode: roastedChestnutMode ?? this.roastedChestnutMode,
+      useItemMode: useItemMode ?? this.useItemMode,
       teamControllers: teamControllers ?? this.teamControllers,
     );
   }

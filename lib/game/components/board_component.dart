@@ -1,6 +1,8 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import '../../domain/logic/board_graph.dart';
+import '../yut_game.dart';
+import '../../presentation/providers/game_provider.dart';
 
 class BoardComponent extends PositionComponent with HasGameRef {
   static const double nodePaddingRatio =
@@ -88,5 +90,118 @@ class BoardComponent extends PositionComponent with HasGameRef {
       canvas.drawCircle(pos, radius, isBig ? specialPaint : nodePaint);
       canvas.drawCircle(pos, radius, nodeBorderPaint);
     }
+
+    // 아이템 타일 표시 (황금색)
+    _renderItemTiles(canvas);
+  }
+
+  void _renderItemTiles(Canvas canvas) {
+    // YutGame에서 게임 상태 가져오기
+    if (gameRef is! YutGame) return;
+
+    try {
+      final yutGame = gameRef as YutGame;
+      final gameState = yutGame.ref.read(gameProvider);
+
+      if (!gameState.activeConfig.useItemMode) return;
+
+      // 아이템 타일 렌더링
+      for (final nodeId in gameState.itemTiles) {
+        final node = BoardGraph.nodes[nodeId];
+        if (node == null) continue;
+
+        final pos = getRelativeNodePos(node.x, node.y).toOffset();
+        final isBig = [0, 5, 10, 15, 20].contains(node.id);
+        final radius = isBig ? (size.x * 0.05) : (size.x * 0.035);
+
+        // 황금색 외곽 글로우
+        final glowPaint = Paint()
+          ..color = Colors.amber.withOpacity(0.5)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
+        canvas.drawCircle(pos, radius, glowPaint);
+
+        // 선물 상자 이모지 (🎁) 그리기
+        final textPainter = TextPainter(
+          text: TextSpan(
+            text: '🎁',
+            style: TextStyle(fontSize: radius * 1.5),
+          ),
+          textDirection: TextDirection.ltr,
+        );
+        textPainter.layout();
+
+        // 중앙에 배치
+        textPainter.paint(
+          canvas,
+          pos - Offset(textPainter.width / 2, textPainter.height / 2),
+        );
+
+        // 반짝이는 효과 (작은 별들)
+        _drawSparkle(
+          canvas,
+          Offset(pos.dx - radius * 0.4, pos.dy - radius * 0.4),
+          radius * 0.3,
+        );
+        _drawSparkle(
+          canvas,
+          Offset(pos.dx + radius * 0.4, pos.dy + radius * 0.4),
+          radius * 0.3,
+        );
+      }
+    } catch (e) {
+      // 초기 프레임 안전성
+    }
+  }
+
+  void _drawSparkle(Canvas canvas, Offset center, double size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.8)
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    for (int i = 0; i < 4; i++) {
+      final angle = (i * 90) * 3.14159 / 180;
+      final x =
+          center.dx + size * 0.5 * (i % 2 == 0 ? 1 : 0.3) * (i < 2 ? 1 : -1);
+      final y =
+          center.dy +
+          size * 0.5 * (i % 2 == 1 ? 1 : 0.3) * ((i == 1 || i == 2) ? 1 : -1);
+
+      if (i == 0) {
+        path.moveTo(center.dx, center.dy - size);
+      }
+      path.lineTo(
+        center.dx +
+            (i == 0
+                ? 0
+                : i == 1
+                ? size * 0.2
+                : i == 2
+                ? 0
+                : -size * 0.2),
+        center.dy +
+            (i == 0
+                ? -size
+                : i == 1
+                ? 0
+                : i == 2
+                ? size
+                : 0),
+      );
+    }
+    path.close();
+
+    // 간단한 십자 별 모양
+    final sparkleSize = size * 0.6;
+    canvas.drawLine(
+      Offset(center.dx, center.dy - sparkleSize),
+      Offset(center.dx, center.dy + sparkleSize),
+      paint..strokeWidth = 2,
+    );
+    canvas.drawLine(
+      Offset(center.dx - sparkleSize, center.dy),
+      Offset(center.dx + sparkleSize, center.dy),
+      paint..strokeWidth = 2,
+    );
   }
 }

@@ -8,6 +8,11 @@ import '../providers/game_state.dart';
 import '../../game/yut_game.dart';
 import '../widgets/throw_button.dart';
 import '../widgets/gauge_widget.dart';
+import '../widgets/item_inventory.dart';
+import '../widgets/item_choice_dialog.dart';
+import '../widgets/moonwalk_direction_dialog.dart';
+import '../widgets/reroll_choice_dialog.dart';
+import '../../domain/models/game_item.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
   const GameScreen({super.key});
@@ -28,6 +33,41 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(gameProvider);
+
+    // 아이템 선택 다이얼로그 표시
+    if (state.showItemChoice && state.pendingItemNodeId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) =>
+              ItemChoiceDialog(nodeId: state.pendingItemNodeId!),
+        );
+      });
+    }
+
+    // 뒷걸음질 방향 선택 다이얼로그 표시 (자동 발동)
+    if (state.showMoonwalkChoice && state.selectedMalId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) =>
+              MoonwalkDirectionDialog(malId: state.selectedMalId!),
+        );
+      });
+    }
+
+    // 다시 던지기 선택 다이얼로그 표시 (자동 발동)
+    if (state.showRerollChoice == true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const RerollChoiceDialog(),
+        );
+      });
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3E5AB),
@@ -117,6 +157,13 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                         ),
                       ),
                     ),
+
+                  // 아이템 인벤토리
+                  const ItemInventory(),
+
+                  // 아이템 획득 팝업 (토스트 스타일)
+                  if (state.justAcquiredItem != null)
+                    _buildAcquisitionPopup(state.justAcquiredItem!),
 
                   // 승리 오버레이
                   if (state.status == GameStatus.finished)
@@ -546,21 +593,43 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   }
 
   Widget _buildSelectionMessage() {
-    // 간단한 한 줄 텍스트
+    final state = ref.watch(gameProvider);
+    String message = '';
+
+    if (state.status == GameStatus.selectingMal) {
+      message = '움직일 말을 선택하세요';
+    } else if (state.status == GameStatus.awaitingShortcutDecision) {
+      message = '지름길로 가시겠습니까?';
+    } else if (state.status == GameStatus.awaitingBanishTarget) {
+      message = '집으로 보낼 상대방 말을 선택하세요 🏠';
+    } else if (state.status == GameStatus.awaitingSwapSource) {
+      message = '위치를 바꿀 내 말을 선택하세요 ↔️';
+    } else if (state.status == GameStatus.awaitingSwapTarget) {
+      message = '교환할 상대방 말을 선택하세요 ↔️';
+    }
+
+    if (message.isEmpty) return const SizedBox.shrink();
+
     return Positioned(
       top: 50,
       left: 0,
       right: 0,
       child: Center(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.7),
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: state.status.name.contains('awaiting')
+                  ? Colors.amber
+                  : Colors.transparent,
+              width: 1,
+            ),
           ),
-          child: const Text(
-            '움직일 말을 선택하세요',
-            style: TextStyle(
+          child: Text(
+            message,
+            style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 14,
@@ -869,5 +938,62 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       case TeamColor.blue:
         return Colors.blue.shade800;
     }
+  }
+
+  Widget _buildAcquisitionPopup(ItemType type) {
+    final state = ref.read(gameProvider);
+    final item = GameItem.fromType(type);
+    final teamName = state.justAcquiredItemTeamName ?? '누군가';
+
+    return Positioned(
+      bottom: 150,
+      left: 20,
+      right: 20,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.brown.withOpacity(0.95),
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.amber.withOpacity(0.5),
+                blurRadius: 15,
+                spreadRadius: 2,
+              ),
+            ],
+            border: Border.all(color: Colors.amber, width: 3),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(item.emoji, style: const TextStyle(fontSize: 40)),
+              const SizedBox(width: 16),
+              Flexible(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '[$teamName] ${item.name} 획득!',
+                      style: const TextStyle(
+                        color: Colors.amber,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.description,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -83,9 +83,9 @@ class MalComponent extends PositionComponent with TapCallbacks, HasGameRef {
 
       for (final nodeId in path) {
         if (nodeId == PathFinder.finishNodeId) {
-          _moveQueue.add(Vector2(-size.x * 2, -size.y * 2));
+          _moveQueue.add(_getHomePosition());
         } else if (nodeId == PathFinder.startNodeId) {
-          _moveQueue.add(Vector2(-size.x * 2, -size.y * 2));
+          _moveQueue.add(_getHomePosition());
         } else {
           final node = BoardGraph.nodes[nodeId];
           if (node != null) {
@@ -114,11 +114,33 @@ class MalComponent extends PositionComponent with TapCallbacks, HasGameRef {
         _moveQueue.clear();
         _isMoving = false;
         children.whereType<MoveEffect>().forEach((e) => e.removeFromParent());
-        _syncPosition(immediate: true);
+        _syncPosition(immediate: false); // 잡힌 연출을 위해 부드럽게 이동
       } else if (posChanged && !_isMoving) {
         _syncPosition();
       }
     }
+  }
+
+  Vector2 _getHomePosition() {
+    if (parent == null || parent is! BoardComponent) return Vector2.zero();
+    final board = parent as BoardComponent;
+    final gameSize = gameRef.size;
+
+    final state = ref.read(gameProvider);
+    final teamIndex = state.teams.indexWhere((t) => t.color == mal.color);
+    final totalTeams = state.teams.length;
+
+    // 하단 대기 위젯의 위치에 맞게 X 좌표 계산 (Row의 spaceEvenly와 유사하게)
+    final sectionWidth = gameSize.x / (totalTeams > 0 ? totalTeams : 4);
+    final screenX = sectionWidth * (teamIndex + 0.5);
+
+    // Y 좌표는 보드 아래쪽 (화면 밖에서 날아오는 느낌)
+    final screenY = gameSize.y + 300;
+
+    // Board는 (gameSize - board.size) / 2 에 위치함. 이를 상대 좌표로 변환
+    final boardOrigin = (gameSize - board.size) / 2;
+
+    return Vector2(screenX - boardOrigin.x, screenY - boardOrigin.y);
   }
 
   void _syncPosition({bool immediate = false}) {
@@ -128,10 +150,10 @@ class MalComponent extends PositionComponent with TapCallbacks, HasGameRef {
 
     Vector2 targetPos;
     if (mal.isFinished) {
-      targetPos = Vector2(-200, -200);
+      targetPos = _getHomePosition();
     } else if (mal.currentNodeId == null) {
-      // 시작점: 화면 밖으로 숨김 (하단 영역에 UI로 표시)
-      targetPos = Vector2(-200, -200);
+      // 시작점: 하단 영역에서 온 것으로 처리
+      targetPos = _getHomePosition();
     } else {
       final node = BoardGraph.nodes[mal.currentNodeId!];
       if (node != null) {
@@ -318,6 +340,15 @@ class MalComponent extends PositionComponent with TapCallbacks, HasGameRef {
   void onTapDown(TapDownEvent event) {
     if (mal.isFinished || _isMoving) return;
     final state = ref.read(gameProvider);
+
+    // 아이템 대상 선택 중인지 확인
+    if (state.status == GameStatus.awaitingBanishTarget ||
+        state.status == GameStatus.awaitingSwapSource ||
+        state.status == GameStatus.awaitingSwapTarget) {
+      ref.read(gameProvider.notifier).handleMalSelectionForItem(mal.id);
+      return;
+    }
+
     if ((state.status == GameStatus.selectingMal ||
             state.status == GameStatus.awaitingShortcutDecision) &&
         state.currentTeam.color == mal.color &&

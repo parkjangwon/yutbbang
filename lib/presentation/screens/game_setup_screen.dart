@@ -93,7 +93,9 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
             ),
             _SettingsRow(
               label: '참여 팀 수',
-              child: Row(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   ...List.generate(3, (index) {
                     final count = index + 2;
@@ -204,7 +206,9 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 _buildNakChoice(
                   label: '쉬움',
@@ -219,7 +223,6 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                       });
                   },
                 ),
-                const SizedBox(width: 8),
                 _buildNakChoice(
                   label: '보통',
                   percent: 15,
@@ -233,7 +236,6 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                       });
                   },
                 ),
-                const SizedBox(width: 8),
                 _buildNakChoice(
                   label: '어려움',
                   percent: 25,
@@ -329,6 +331,18 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
               activeColor: Colors.brown,
               onChanged: (val) => setState(() {
                 _localConfig = _localConfig.copyWith(roastedChestnutMode: val);
+              }),
+            ),
+            SwitchListTile(
+              title: const Text(
+                '아이템 모드',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text('게임판에 아이템 타일이 생성되어 다양한 아이템을 사용할 수 있습니다.'),
+              value: config.useItemMode,
+              activeColor: Colors.brown,
+              onChanged: (val) => setState(() {
+                _localConfig = _localConfig.copyWith(useItemMode: val);
               }),
             ),
             const SizedBox(height: 50),

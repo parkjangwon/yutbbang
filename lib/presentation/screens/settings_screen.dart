@@ -65,7 +65,9 @@ class SettingsScreen extends ConsumerWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               _buildNakChoice(
                 label: '쉬움',
@@ -79,7 +81,6 @@ class SettingsScreen extends ConsumerWidget {
                 },
                 isControlMode: config.useGaugeControl,
               ),
-              const SizedBox(width: 8),
               _buildNakChoice(
                 label: '보통',
                 percent: 15,
@@ -92,7 +93,6 @@ class SettingsScreen extends ConsumerWidget {
                 },
                 isControlMode: config.useGaugeControl,
               ),
-              const SizedBox(width: 8),
               _buildNakChoice(
                 label: '어려움',
                 percent: 25,
@@ -171,6 +171,15 @@ class SettingsScreen extends ConsumerWidget {
               gameNotifier.updateConfig(
                 config.copyWith(roastedChestnutMode: val),
               );
+            },
+          ),
+          SwitchListTile(
+            title: const Text('아이템 모드'),
+            subtitle: const Text('게임판에 아이템 타일이 생성되어 다양한 아이템을 사용할 수 있습니다.'),
+            value: config.useItemMode,
+            activeColor: Colors.brown,
+            onChanged: (val) {
+              gameNotifier.updateConfig(config.copyWith(useItemMode: val));
             },
           ),
           const Divider(height: 40),

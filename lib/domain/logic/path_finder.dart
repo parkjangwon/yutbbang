@@ -12,9 +12,11 @@ class PathFinder {
     YutResult result, {
     bool useShortcut = false,
     List<int>? previousNodeIds,
+    bool isReverse = false,
   }) {
     if (result == YutResult.nak) return [];
-    if (result == YutResult.backDo && startId == startNodeId) return [];
+    if ((result == YutResult.backDo || isReverse) && startId == startNodeId)
+      return [];
 
     List<int> path = [];
     int currentId = startId;
@@ -23,10 +25,10 @@ class PathFinder {
     for (int i = 0; i < moves; i++) {
       int? nextId;
 
-      if (result == YutResult.backDo) {
-        // Use historical nodes for Back-Do to handle consecutive Back-Dos correctly
-        if (i == 0 && previousNodeIds != null && previousNodeIds.isNotEmpty) {
-          nextId = previousNodeIds.last;
+      if (result == YutResult.backDo || isReverse) {
+        // Use historical nodes for backward movement if available
+        if (previousNodeIds != null && previousNodeIds.length > i) {
+          nextId = previousNodeIds[previousNodeIds.length - 1 - i];
         } else {
           nextId = BoardGraph.nodes[currentId]?.prevId ?? startNodeId;
         }

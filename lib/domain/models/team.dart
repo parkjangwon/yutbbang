@@ -1,3 +1,5 @@
+import 'game_item.dart';
+
 enum TeamColor { orange, green, red, blue }
 
 class Mal {
@@ -44,6 +46,8 @@ class Team {
   final int controllerId; // 0 = CPU, 1-4 = Player
   final bool isHuman;
   final bool hasForfeit; // 기권 여부
+  final List<ItemType> items; // 아이템 인벤토리 (최대 2개)
+  final bool skipNextTurn; // 얼음탄용 상태
 
   Team({
     required this.name,
@@ -52,6 +56,8 @@ class Team {
     this.controllerId = 1,
     this.isHuman = true,
     this.hasForfeit = false,
+    this.items = const [],
+    this.skipNextTurn = false,
   });
 
   int get finishedCount => mals.where((m) => m.isFinished).length;
@@ -64,6 +70,8 @@ class Team {
     int? controllerId,
     bool? isHuman,
     bool? hasForfeit,
+    List<ItemType>? items,
+    bool? skipNextTurn,
   }) {
     return Team(
       name: name ?? this.name,
@@ -72,6 +80,8 @@ class Team {
       controllerId: controllerId ?? this.controllerId,
       isHuman: isHuman ?? this.isHuman,
       hasForfeit: hasForfeit ?? this.hasForfeit,
+      items: items ?? this.items,
+      skipNextTurn: skipNextTurn ?? this.skipNextTurn,
     );
   }
 }

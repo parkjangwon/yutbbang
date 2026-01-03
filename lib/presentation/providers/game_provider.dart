@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/game_rule_config.dart';
 import '../../domain/models/team.dart';
 import '../../domain/models/yut_result.dart';
+import '../../domain/models/game_item.dart';
 import '../../domain/logic/yut_logic.dart';
 import '../../domain/logic/ai_logic.dart';
 import '../../domain/logic/path_finder.dart';
@@ -84,6 +85,7 @@ class GameNotifier extends StateNotifier<GameState> {
     final autoCarrier = prefs.getBool('autoCarrier') ?? false;
     final totalNak = prefs.getBool('totalNak') ?? false;
     final roastedChestnutMode = prefs.getBool('roastedChestnutMode') ?? false;
+    final useItemMode = prefs.getBool('useItemMode') ?? false;
     final aiDifficulty = prefs.getInt('aiDifficulty') ?? 5;
     final nakChancePercent = prefs.getInt('nakChancePercent') ?? 15;
 
@@ -94,6 +96,7 @@ class GameNotifier extends StateNotifier<GameState> {
       autoCarrier: autoCarrier,
       totalNak: totalNak,
       roastedChestnutMode: roastedChestnutMode,
+      useItemMode: useItemMode,
       aiDifficulty: aiDifficulty,
       nakChancePercent: nakChancePercent,
     );
@@ -114,15 +117,465 @@ class GameNotifier extends StateNotifier<GameState> {
     await prefs.setBool('autoCarrier', config.autoCarrier);
     await prefs.setBool('totalNak', config.totalNak);
     await prefs.setBool('roastedChestnutMode', config.roastedChestnutMode);
+    await prefs.setBool('useItemMode', config.useItemMode);
     await prefs.setInt('aiDifficulty', config.aiDifficulty);
     await prefs.setInt('nakChancePercent', config.nakChancePercent);
   }
 
   void startGameWithConfig(GameRuleConfig gameConfig) {
-    state = _buildInitialState(
-      state.config,
-      gameConfig,
-    ).copyWith(status: GameStatus.throwing);
+    final initialState = _buildInitialState(state.config, gameConfig);
+
+    // 아이템 모드가 활성화된 경우 아이템 타일 생성
+    Set<int> itemTiles = {};
+    if (gameConfig.useItemMode) {
+      itemTiles = _generateItemTiles();
+    }
+
+    state = initialState.copyWith(
+      status: GameStatus.throwing,
+      itemTiles: itemTiles,
+    );
+
+    // 첫 번째 턴이 AI인 경우 자동 시작 (관전 모드 대응)
+    if (!state.currentTeam.isHuman) {
+      Future.delayed(const Duration(milliseconds: 2000), () {
+        if (mounted && state.status == GameStatus.throwing) {
+          _aiProcessItems();
+          throwYut();
+        }
+      });
+    }
+  }
+
+  Set<int> _generateItemTiles() {
+    // 모든 유효한 노드 (1~28번)
+    final allNodes = List.generate(29, (i) => i).where((i) => i > 0).toList();
+    final random = Random();
+    final itemTiles = <int>{};
+
+    // 30% 비율로 아이템 타일 생성 (약 8~9개)
+    final itemCount = (allNodes.length * 0.3).round();
+
+    // 1. 모든 노드를 섞음
+    allNodes.shuffle(random);
+
+    // 2. 인접 노드 제약을 지키며 우선 선택
+    for (final nodeId in allNodes) {
+      if (itemTiles.length >= itemCount) break;
+
+      final node = BoardGraph.nodes[nodeId];
+      if (node == null) continue;
+
+      // 인접한 노드들에 이미 아이템이 있는지 확인
+      bool hasNeighborItem = false;
+      final neighbors = [
+        node.nextId,
+        node.prevId,
+        node.shortcutNextId,
+      ].whereType<int>();
+
+      for (final neighborId in neighbors) {
+        if (itemTiles.contains(neighborId)) {
+          hasNeighborItem = true;
+          break;
+        }
+      }
+
+      if (!hasNeighborItem) {
+        itemTiles.add(nodeId);
+      }
+    }
+
+    // 3. 만약 제약 때문에 목표 개수를 못 채웠다면, 나머지는 랜덤하게 채움 (이미 섞여있으므로 순서대로)
+    for (final nodeId in allNodes) {
+      if (itemTiles.length >= itemCount) break;
+      itemTiles.add(nodeId);
+    }
+
+    return itemTiles;
+  }
+
+  void _handleItemAcquisition(int teamIndex, int nodeId) {
+    // 랜덤 아이템 생성
+    final random = Random();
+    final randomItem =
+        GameItem.allItems[random.nextInt(GameItem.allItems.length)].type;
+
+    final nextTeams = List<Team>.from(state.teams);
+    final team = nextTeams[teamIndex];
+
+    // 인벤토리 확인
+    if (team.items.length < 2) {
+      // 바로 추가
+      final newItems = List<ItemType>.from(team.items)..add(randomItem);
+      nextTeams[teamIndex] = team.copyWith(items: newItems);
+
+      // 타일에서 아이템 제거
+      final newItemTiles = Set<int>.from(state.itemTiles)..remove(nodeId);
+
+      state = state.copyWith(
+        teams: nextTeams,
+        itemTiles: newItemTiles,
+        justAcquiredItem: randomItem,
+        justAcquiredItemTeamName: team.name,
+      );
+
+      // 팝업 제거 타이머
+      Future.delayed(const Duration(milliseconds: 2500), () {
+        if (mounted) {
+          state = state.copyWith(
+            justAcquiredItem: null,
+            justAcquiredItemTeamName: null,
+          );
+        }
+      });
+    } else {
+      if (team.isHuman) {
+        // 인벤토리 꽉 찬 경우 - 플레이어 선택 UI 표시
+        state = state.copyWith(
+          pendingItem: randomItem,
+          pendingItemNodeId: nodeId,
+          pendingItemTeamIndex: teamIndex,
+          showItemChoice: true,
+        );
+      } else {
+        // AI 자동 선택 (난이도에 따라 새 아이템 취사선택)
+        // 50% 확률로 랜덤하게 기존 아이템 하나와 교체
+        if (random.nextDouble() > 0.5) {
+          final slot = random.nextInt(2);
+          final newItems = List<ItemType>.from(team.items);
+          newItems[slot] = randomItem;
+          nextTeams[teamIndex] = team.copyWith(items: newItems);
+          final newItemTiles = Set<int>.from(state.itemTiles)..remove(nodeId);
+          state = state.copyWith(teams: nextTeams, itemTiles: newItemTiles);
+        }
+      }
+    }
+  }
+
+  void replaceItem(int slotIndex, int nodeId, {required int teamIndex}) {
+    // 인벤토리의 특정 슬롯 아이템을 새 아이템으로 교체
+    if (state.pendingItem == null) return;
+
+    final nextTeams = List<Team>.from(state.teams);
+    final team = nextTeams[teamIndex];
+
+    final newItems = List<ItemType>.from(team.items);
+    newItems[slotIndex] = state.pendingItem!;
+
+    nextTeams[teamIndex] = team.copyWith(items: newItems);
+
+    // 타일에서 아이템 제거
+    final newItemTiles = Set<int>.from(state.itemTiles)..remove(nodeId);
+
+    state = state.copyWith(
+      teams: nextTeams,
+      itemTiles: newItemTiles,
+      pendingItem: null,
+      pendingItemNodeId: null,
+      pendingItemTeamIndex: null, // Clear after use
+      showItemChoice: false,
+    );
+  }
+
+  void discardPendingItem() {
+    // 새 아이템 포기 (타일에서는 제거하지 않음)
+    state = state.copyWith(
+      pendingItem: null,
+      pendingItemNodeId: null,
+      pendingItemTeamIndex: null, // Clear after use
+      showItemChoice: false,
+    );
+  }
+
+  void useItem(ItemType itemType) {
+    final teamIndex = state.turnIndex % state.teams.length;
+    final team = state.teams[teamIndex];
+
+    // 아이템이 인벤토리에 있는지 확인
+    if (!team.items.contains(itemType)) return;
+
+    // 내 턴이 아니면 사용 불가
+    if (!state.currentTeam.isHuman) return;
+
+    // 아이템별 사용 로직
+    switch (itemType) {
+      case ItemType.reroll:
+        _useReroll(teamIndex);
+        break;
+      case ItemType.shield:
+        // Shield는 자동 적용되므로 수동 사용 불가
+        return;
+      case ItemType.magnet:
+        _useMagnet(teamIndex);
+        break;
+      case ItemType.moonwalk:
+        // 뒷걸음질은 자동 발동되므로 수동 사용 불가
+        return;
+      case ItemType.typhoon:
+        _useTyphoon(teamIndex);
+        break;
+      case ItemType.banish:
+        _useBanish(teamIndex);
+        break;
+      case ItemType.freeze:
+        _useFreeze(teamIndex);
+        break;
+      case ItemType.swap:
+        _useSwap(teamIndex);
+        break;
+      case ItemType.fixedDice:
+        _useFixedDice(teamIndex);
+        break;
+    }
+
+    // 아이템 제거
+    final newItems = List<ItemType>.from(team.items)..remove(itemType);
+    final nextTeams = List<Team>.from(state.teams);
+    nextTeams[teamIndex] = team.copyWith(items: newItems);
+    state = state.copyWith(teams: nextTeams);
+  }
+
+  void _useReroll(int teamIndex) {
+    // 다시 던지기: 현재 결과 무시하고 다시 던지기
+    if (state.status != GameStatus.selectingMal &&
+        state.status != GameStatus.throwing)
+      return;
+
+    state = state.copyWith(
+      currentThrows: [],
+      lastResult: null,
+      status: GameStatus.throwing,
+      selectedMalId: null,
+    );
+  }
+
+  void _useMagnet(int teamIndex) {
+    // 자석: 내 말 앞 3칸 이내 상대 말 잡기
+    final team = state.teams[teamIndex];
+    final nextTeams = List<Team>.from(state.teams);
+
+    bool caughtAny = false;
+
+    // 내 말들의 위치 확인
+    for (final myMal in team.mals) {
+      if (myMal.currentNodeId == null || myMal.isFinished) continue;
+
+      // 앞 3칸 이내 노드 찾기
+      final nearbyNodes = _getNodesWithinDistance(myMal.currentNodeId!, 3);
+
+      // 상대 말 찾기
+      for (int i = 0; i < nextTeams.length; i++) {
+        if (i == teamIndex) continue;
+
+        final otherTeam = nextTeams[i];
+        final caughtMals = otherTeam.mals.map((m) {
+          if (m.currentNodeId != null &&
+              nearbyNodes.contains(m.currentNodeId)) {
+            caughtAny = true;
+            return m.copyWith(
+              currentNodeId: null,
+              lastNodeId: null,
+              historyNodeIds: [],
+              isFinished: false,
+            );
+          }
+          return m;
+        }).toList();
+
+        nextTeams[i] = otherTeam.copyWith(mals: caughtMals);
+      }
+    }
+
+    if (caughtAny) {
+      state = state.copyWith(teams: nextTeams);
+      HapticFeedback.heavyImpact();
+    }
+  }
+
+  List<int> _getNodesWithinDistance(int startNodeId, int maxDistance) {
+    final result = <int>{startNodeId};
+    final queue = <(int, int)>[(startNodeId, 0)]; // (nodeId, distance)
+    final visited = <int>{};
+
+    while (queue.isNotEmpty) {
+      final (nodeId, distance) = queue.removeAt(0);
+      if (visited.contains(nodeId) || distance > maxDistance) continue;
+      visited.add(nodeId);
+      result.add(nodeId);
+
+      final node = BoardGraph.nodes[nodeId];
+      if (node == null) continue;
+
+      if (node.nextId != null && distance < maxDistance) {
+        queue.add((node.nextId!, distance + 1));
+      }
+      if (node.shortcutNextId != null && distance < maxDistance) {
+        queue.add((node.shortcutNextId!, distance + 1));
+      }
+    }
+
+    return result.toList();
+  }
+
+  void _useTyphoon(int teamIndex) {
+    // 태풍: 모든 말 위치 섞기
+    final random = Random();
+    final nextTeams = List<Team>.from(state.teams);
+
+    // 모든 팀의 말 위치 수집 (완주하지 않은 말만)
+    final allPositions = <int>[];
+    for (var team in nextTeams) {
+      for (var mal in team.mals) {
+        if (mal.currentNodeId != null && !mal.isFinished) {
+          allPositions.add(mal.currentNodeId!);
+        }
+      }
+    }
+
+    // 위치 섞기
+    allPositions.shuffle(random);
+
+    // 다시 배치
+    int posIndex = 0;
+    for (int i = 0; i < nextTeams.length; i++) {
+      final team = nextTeams[i];
+      final newMals = team.mals.map((mal) {
+        if (mal.currentNodeId != null && !mal.isFinished) {
+          final newNodeId = allPositions[posIndex++];
+          return mal.copyWith(
+            currentNodeId: newNodeId,
+            historyNodeIds: [newNodeId],
+          );
+        }
+        return mal;
+      }).toList();
+      nextTeams[i] = team.copyWith(mals: newMals);
+    }
+
+    state = state.copyWith(teams: nextTeams);
+    HapticFeedback.heavyImpact();
+  }
+
+  void _useBanish(int teamIndex) {
+    state = state.copyWith(status: GameStatus.awaitingBanishTarget);
+  }
+
+  void _useFreeze(int teamIndex) {
+    // 다음 상대방 팀 턴 스킵 설정
+    final nextTeams = List<Team>.from(state.teams);
+    final nextTargetIndex = (teamIndex + 1) % nextTeams.length;
+    nextTeams[nextTargetIndex] = nextTeams[nextTargetIndex].copyWith(
+      skipNextTurn: true,
+    );
+    state = state.copyWith(teams: nextTeams);
+  }
+
+  void _useSwap(int teamIndex) {
+    state = state.copyWith(
+      status: GameStatus.awaitingSwapSource,
+      selectedMalId: null,
+    );
+  }
+
+  void _useFixedDice(int teamIndex) {
+    state = state.copyWith(isFixedDiceActive: true);
+  }
+
+  void handleMalSelectionForItem(int malId) {
+    final teamIndex = state.turnIndex % state.teams.length;
+    final nextTeams = List<Team>.from(state.teams);
+    final currentTeam = nextTeams[teamIndex];
+
+    if (state.status == GameStatus.awaitingBanishTarget) {
+      // 상대방 말 체크
+      final targetTeamIndex = nextTeams.indexWhere(
+        (t) => t.mals.any((m) => m.id == malId && t.color != currentTeam.color),
+      );
+      if (targetTeamIndex == -1) return;
+
+      final targetTeam = nextTeams[targetTeamIndex];
+      final targetMal = targetTeam.mals.firstWhere((m) => m.id == malId);
+      if (targetMal.currentNodeId == null || targetMal.isFinished) return;
+
+      final updatedMals = targetTeam.mals.map((m) {
+        if (m.id == malId) {
+          return m.copyWith(
+            currentNodeId: null,
+            lastNodeId: null,
+            historyNodeIds: [],
+            isFinished: false,
+          );
+        }
+        return m;
+      }).toList();
+      nextTeams[targetTeamIndex] = targetTeam.copyWith(mals: updatedMals);
+
+      state = state.copyWith(teams: nextTeams, status: GameStatus.throwing);
+      _triggerCaptureSound();
+      HapticFeedback.heavyImpact();
+    } else if (state.status == GameStatus.awaitingSwapSource) {
+      // 내 말 체크
+      final myMal = currentTeam.mals.firstWhere(
+        (m) => m.id == malId,
+        orElse: () => currentTeam.mals.first,
+      );
+      if (myMal.id != malId || myMal.currentNodeId == null || myMal.isFinished)
+        return;
+
+      state = state.copyWith(
+        selectedMalId: malId,
+        status: GameStatus.awaitingSwapTarget,
+      );
+      HapticFeedback.mediumImpact();
+    } else if (state.status == GameStatus.awaitingSwapTarget) {
+      // 상대방 말 체크
+      final targetTeamIndex = nextTeams.indexWhere(
+        (t) => t.mals.any((m) => m.id == malId && t.color != currentTeam.color),
+      );
+      if (targetTeamIndex == -1) return;
+
+      final targetTeam = nextTeams[targetTeamIndex];
+      final otherMal = targetTeam.mals.firstWhere((m) => m.id == malId);
+      if (otherMal.currentNodeId == null || otherMal.isFinished) return;
+
+      final myMalId = state.selectedMalId;
+      if (myMalId == null) return;
+
+      final myMal = currentTeam.mals.firstWhere((m) => m.id == myMalId);
+
+      final myPos = myMal.currentNodeId;
+      final otherPos = otherMal.currentNodeId;
+
+      if (myPos == null || otherPos == null) return;
+
+      // Swap positions
+      final updatedMyMals = currentTeam.mals.map((m) {
+        if (m.id == myMalId) {
+          return m.copyWith(
+            currentNodeId: otherPos,
+            historyNodeIds: [otherPos],
+          );
+        }
+        return m;
+      }).toList();
+      nextTeams[teamIndex] = currentTeam.copyWith(mals: updatedMyMals);
+
+      final updatedOtherMals = targetTeam.mals.map((m) {
+        if (m.id == malId) {
+          return m.copyWith(currentNodeId: myPos, historyNodeIds: [myPos]);
+        }
+        return m;
+      }).toList();
+      nextTeams[targetTeamIndex] = targetTeam.copyWith(mals: updatedOtherMals);
+
+      state = state.copyWith(
+        teams: nextTeams,
+        status: GameStatus.throwing,
+        selectedMalId: null,
+      );
+      HapticFeedback.heavyImpact();
+    }
   }
 
   void throwYut({bool forceNak = false}) {
@@ -130,92 +583,187 @@ class GameNotifier extends StateNotifier<GameState> {
     state = state.copyWith(status: GameStatus.moving);
 
     final isGaugeMode = state.activeConfig.useGaugeControl;
-    final throwRes = YutLogic.throwYut(
-      forceNak: forceNak,
-      randomNakChance: isGaugeMode
-          ? 0.0
-          : (state.activeConfig.nakChancePercent / 100.0),
-      useBackDo: state.activeConfig.useBackDo,
-    );
-    final result = throwRes.result;
+    final result;
+    final List<bool> sticks;
+
+    if (state.isFixedDiceActive) {
+      // 황금 윷: 무조건 윷 또는 모 (50:50 확률)
+      final random = Random();
+      final isYut = random.nextBool();
+      result = isYut ? YutResult.yut : YutResult.mo;
+      sticks = isYut ? [true, true, true, true] : [false, false, false, false];
+    } else {
+      final throwRes = YutLogic.throwYut(
+        forceNak: forceNak,
+        randomNakChance: isGaugeMode
+            ? 0.0
+            : (state.activeConfig.nakChancePercent / 100.0),
+        useBackDo: state.activeConfig.useBackDo,
+      );
+      result = throwRes.result;
+      sticks = throwRes.sticks;
+    }
+
     if (state.currentTeam.isHuman) {
       _triggerThrowHaptics(result);
       _triggerThrowSound(result);
     }
 
     state = state.copyWith(
-      lastStickStates: throwRes.sticks,
+      lastStickStates: sticks,
       lastResult: result,
+      isFixedDiceActive: false, // 사용 후 해제
     );
 
     Future.delayed(const Duration(milliseconds: 1000), () {
       if (!mounted) return;
-      if (result == YutResult.nak) {
-        // 전낙 규칙: 낙이 발생하면 이전 윷/모 결과도 모두 취소하고 턴 종료
-        if (state.activeConfig.totalNak && state.currentThrows.isNotEmpty) {
-          state = state.copyWith(currentThrows: []);
-          nextTurn();
+
+      // 다시 던지기 아이템 자동 발동 체크
+      final teamIndex = state.turnIndex % state.teams.length;
+      final team = state.teams[teamIndex];
+      if (team.items.contains(ItemType.reroll)) {
+        if (team.isHuman) {
+          state = state.copyWith(showRerollChoice: true);
+          return;
+        } else if (result == YutResult.nak) {
+          // AI는 낙이 나왔을 때만 다시 던지기 사용
+          confirmReroll(true);
           return;
         }
+      }
 
-        // 일반 낙 규칙 (기존): 윷/모를 던진 후 낙이 나오면 이전 결과는 유효
-        if (state.currentThrows.isEmpty) {
-          nextTurn();
-        } else {
-          state = state.copyWith(status: GameStatus.selectingMal);
-          if (!state.currentTeam.isHuman)
-            Future.delayed(
-              const Duration(milliseconds: 1500),
-              () => aiSelectAndMove(),
-            );
+      _processThrowResult(result);
+    });
+  }
+
+  void _processThrowResult(YutResult result) {
+    if (result == YutResult.nak) {
+      // Shield 아이템 자동 적용 체크
+      final teamIndex = state.turnIndex % state.teams.length;
+      final team = state.teams[teamIndex];
+
+      if (team.items.contains(ItemType.shield)) {
+        // Shield 사용하여 낙을 '도'로 변경
+        final newItems = List<ItemType>.from(team.items)
+          ..remove(ItemType.shield);
+        final nextTeams = List<Team>.from(state.teams);
+        nextTeams[teamIndex] = team.copyWith(items: newItems);
+
+        // 결과를 '도'로 변경
+        final newThrows = [...state.currentThrows, YutResult.do_];
+
+        state = state.copyWith(
+          teams: nextTeams,
+          currentThrows: newThrows,
+          lastResult: YutResult.do_,
+          status: GameStatus.selectingMal,
+        );
+
+        if (!state.currentTeam.isHuman) {
+          Future.delayed(
+            const Duration(milliseconds: 1500),
+            () => aiSelectAndMove(),
+          );
         }
         return;
       }
 
-      final newThrows = [...state.currentThrows, result];
-
-      if (result == YutResult.backDo) {
-        final team = state.currentTeam;
-        final piecesOnBoard = team.mals.any(
-          (m) => m.currentNodeId != null && !m.isFinished,
-        );
-
-        // 빽도 날기 규칙: 판 위에 말이 있어도 대기 중인 말이 빽도로 즉시 골인 가능하면 유효 처리
-        bool canFly =
-            state.activeConfig.backDoFlying &&
-            team.mals.any((m) => m.currentNodeId == null && !m.isFinished);
-
-        if (!piecesOnBoard && !canFly) {
-          // 버리는 빽도 (판 위에 말도 없고 날기도 안되는 경우)
-          state = state.copyWith(currentThrows: state.currentThrows);
-          _finalizeMove();
-          return;
-        }
+      // 전낙 규칙: 낙이 발생하면 이전 윷/모 결과도 모두 취소하고 턴 종료
+      if (state.activeConfig.totalNak && state.currentThrows.isNotEmpty) {
+        state = state.copyWith(currentThrows: []);
+        nextTurn();
+        return;
       }
 
-      if (result.isBonusTurn) {
-        state = state.copyWith(
-          currentThrows: newThrows,
-          status: GameStatus.throwing,
-        );
-        if (!state.currentTeam.isHuman)
-          Future.delayed(const Duration(milliseconds: 1000), () => throwYut());
+      // 일반 낙 규칙 (기존): 윷/모를 던진 후 낙이 나오면 이전 결과는 유효
+      if (state.currentThrows.isEmpty) {
+        nextTurn();
       } else {
-        state = state.copyWith(
-          currentThrows: newThrows,
-          status: GameStatus.selectingMal,
-        );
+        state = state.copyWith(status: GameStatus.selectingMal);
         if (!state.currentTeam.isHuman)
           Future.delayed(
             const Duration(milliseconds: 1500),
             () => aiSelectAndMove(),
           );
-        else {
-          // Check for auto-move if only one mal is movable
-          _checkAutoMove();
-        }
       }
-    });
+      return;
+    }
+
+    YutResult actualResult = result;
+    final newThrows = [...state.currentThrows, actualResult];
+
+    if (actualResult == YutResult.backDo) {
+      final team = state.currentTeam;
+      final piecesOnBoard = team.mals.any(
+        (m) => m.currentNodeId != null && !m.isFinished,
+      );
+
+      // 빽도 날기 규칙: 판 위에 말이 있어도 대기 중인 말이 빽도로 즉시 골인 가능하면 유효 처리
+      bool canFly =
+          state.activeConfig.backDoFlying &&
+          team.mals.any((m) => m.currentNodeId == null && !m.isFinished);
+
+      if (!piecesOnBoard && !canFly) {
+        // 버리는 빽도 (판 위에 말도 없고 날기도 안되는 경우)
+        state = state.copyWith(currentThrows: state.currentThrows);
+        _finalizeMove();
+        return;
+      }
+    }
+
+    if (actualResult.isBonusTurn) {
+      state = state.copyWith(
+        currentThrows: newThrows,
+        status: GameStatus.throwing,
+      );
+      if (!state.currentTeam.isHuman)
+        Future.delayed(const Duration(milliseconds: 1000), () => throwYut());
+    } else {
+      state = state.copyWith(
+        currentThrows: newThrows,
+        status: GameStatus.selectingMal,
+      );
+      if (!state.currentTeam.isHuman) {
+        Future.delayed(
+          const Duration(milliseconds: 1500),
+          () => aiSelectAndMove(),
+        );
+      } else {
+        // Check for auto-move if only one mal is movable
+        _checkAutoMove();
+      }
+    }
+  }
+
+  void confirmReroll(bool use) {
+    state = state.copyWith(showRerollChoice: false);
+
+    if (use) {
+      final teamIndex = state.turnIndex % state.teams.length;
+      final team = state.teams[teamIndex];
+
+      // 아이템 제거
+      final newItems = List<ItemType>.from(team.items)..remove(ItemType.reroll);
+      final nextTeams = List<Team>.from(state.teams);
+      nextTeams[teamIndex] = team.copyWith(items: newItems);
+
+      state = state.copyWith(
+        teams: nextTeams,
+        status: GameStatus.throwing,
+        lastResult: null,
+      );
+      HapticFeedback.mediumImpact();
+
+      // AI인 경우 자동으로 다시 던지기 수행
+      if (!team.isHuman) {
+        Future.delayed(const Duration(milliseconds: 1000), () => throwYut());
+      }
+    } else {
+      // 아이템 사용 안 함 -> 원래 결과 처리 진행
+      if (state.lastResult != null) {
+        _processThrowResult(state.lastResult!);
+      }
+    }
   }
 
   void startGauge() {
@@ -369,6 +917,30 @@ class GameNotifier extends StateNotifier<GameState> {
         node?.shortcutNextId != null && result != YutResult.backDo;
     final isDecisionPoint = (mal.currentNodeId == 5 || mal.currentNodeId == 10);
 
+    // --- 뒷걸음질 자동 발동 체크 ---
+    final hasMoonwalk = team.items.contains(ItemType.moonwalk);
+    final isMoonwalkableResult =
+        (result == YutResult.do_ ||
+        result == YutResult.gae ||
+        result == YutResult.geol);
+
+    // 이미 뒷걸음질 모드이거나 AI인 경우는 제외
+    // 또한 말이 이미 판 위에 있는 경우에만 뒷걸음질 가능
+    if (hasMoonwalk &&
+        isMoonwalkableResult &&
+        state.currentTeam.isHuman &&
+        !state.moonwalkActive &&
+        mal.currentNodeId != null) {
+      state = state.copyWith(selectedMalId: malId, showMoonwalkChoice: true);
+      return;
+    }
+
+    if (state.moonwalkActive) {
+      // 뒷걸음질 활성화 상태에서 말을 고르면 다이얼로그를 띄우기 위해 상태만 업데이트
+      state = state.copyWith(selectedMalId: malId);
+      return;
+    }
+
     if (hasShortcut && isDecisionPoint) {
       if (state.activeConfig.roastedChestnutMode) {
         // 군밤 모드: 지름길에서 항상 최단 거리 선택
@@ -387,6 +959,66 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
+  void confirmMoonwalk(bool use) {
+    if (state.selectedMalId == null) return;
+
+    final malId = state.selectedMalId!;
+    final result = state.currentThrows.first;
+
+    if (use) {
+      // 아이템 소모
+      final teamIndex = state.turnIndex % state.teams.length;
+      final team = state.teams[teamIndex];
+      final newItems = List<ItemType>.from(team.items)
+        ..remove(ItemType.moonwalk);
+      final nextTeams = List<Team>.from(state.teams);
+      nextTeams[teamIndex] = team.copyWith(items: newItems);
+
+      state = state.copyWith(teams: nextTeams, showMoonwalkChoice: false);
+
+      // 뒤로 이동 (moveMal은 forward 파라미터가 없으므로 selectMalWithDirection 사용)
+      state = state.copyWith(moonwalkActive: true);
+      selectMalWithDirection(malId, forward: false);
+
+      // selectMalWithDirection 내부에서 moonwalkActive를 끄도록 수정 필요
+    } else {
+      // 사용 안함 -> 그냥 원래대로 이동
+      state = state.copyWith(showMoonwalkChoice: false);
+
+      final mal = state.currentTeam.mals.firstWhere((m) => m.id == malId);
+      final node = BoardGraph.nodes[mal.currentNodeId ?? -1];
+      final isDecisionPoint =
+          (mal.currentNodeId == 5 || mal.currentNodeId == 10);
+      final hasShortcut =
+          node?.shortcutNextId != null && result != YutResult.backDo;
+
+      if (hasShortcut && isDecisionPoint) {
+        state = state.copyWith(status: GameStatus.awaitingShortcutDecision);
+      } else {
+        moveMal(malId, result);
+      }
+    }
+  }
+
+  void selectMalWithDirection(int malId, {required bool forward}) {
+    // 뒷걸음질 방향 선택
+    if (!state.moonwalkActive) {
+      selectMal(malId);
+      return;
+    }
+
+    final result = state.currentThrows.isNotEmpty
+        ? state.currentThrows.first
+        : null;
+    if (result == null) return;
+
+    // moonwalkActive 비활성화
+    state = state.copyWith(moonwalkActive: false);
+
+    // 말 이동 (forward가 false면 reverse)
+    moveMal(malId, result, isReverse: !forward);
+  }
+
   void chooseShortcut(bool useShortcut) {
     if (state.status != GameStatus.awaitingShortcutDecision ||
         state.selectedMalId == null)
@@ -400,7 +1032,12 @@ class GameNotifier extends StateNotifier<GameState> {
     );
   }
 
-  void moveMal(int malId, YutResult result, {bool useShortcut = false}) {
+  void moveMal(
+    int malId,
+    YutResult result, {
+    bool useShortcut = false,
+    bool isReverse = false,
+  }) {
     state = state.copyWith(status: GameStatus.moving);
 
     final team = state.currentTeam;
@@ -419,6 +1056,7 @@ class GameNotifier extends StateNotifier<GameState> {
         result,
         useShortcut: useShortcut,
         previousNodeIds: mal.historyNodeIds,
+        isReverse: isReverse,
       );
     }
 
@@ -451,18 +1089,23 @@ class GameNotifier extends StateNotifier<GameState> {
 
     Future.delayed(Duration(milliseconds: 300 * path.length + 300), () {
       if (!mounted) return;
-      _applyMoveResult(malId, path, result);
+      _applyMoveResult(malId, path, result, isReverse: isReverse);
     });
   }
 
-  void _applyMoveResult(int malId, List<int> path, YutResult result) {
+  void _applyMoveResult(
+    int malId,
+    List<int> path,
+    YutResult result, {
+    bool isReverse = false,
+  }) {
     final destinationId = path.last;
     final landingNodeId =
         destinationId == PathFinder.finishNodeId && path.length >= 2
         ? path[path.length - 2]
-        : destinationId;
+        : (destinationId == PathFinder.finishNodeId ? null : destinationId);
     final teamIndex = state.turnIndex % state.teams.length;
-    final nextTeams = List<Team>.from(state.teams);
+    var nextTeams = List<Team>.from(state.teams);
     final team = nextTeams[teamIndex];
     final mal = team.mals.firstWhere((m) => m.id == malId);
     final previousNodeId = mal.currentNodeId;
@@ -474,6 +1117,10 @@ class GameNotifier extends StateNotifier<GameState> {
     bool caughtHuman = false;
     final bool catcherHuman = state.currentTeam.isHuman;
     final movedMalsIds = [malId];
+
+    ItemType? pendingItem;
+    int? pendingNodeId;
+    int? pendingItemTeamIndex; // Declare here
     if (mal.currentNodeId != null) {
       movedMalsIds.addAll(
         team.mals
@@ -501,8 +1148,12 @@ class GameNotifier extends StateNotifier<GameState> {
         }
 
         List<int> newHistory = List<int>.from(m.historyNodeIds);
-        if (result == YutResult.backDo) {
-          if (newHistory.isNotEmpty) newHistory.removeLast();
+        if (result == YutResult.backDo || isReverse) {
+          // Remove moves from history (but no more than what's there)
+          int stepsToRemove = result.moveCount.abs();
+          for (int k = 0; k < stepsToRemove; k++) {
+            if (newHistory.isNotEmpty) newHistory.removeLast();
+          }
         } else {
           if (previousNodeId != null) {
             newHistory.add(previousNodeId);
@@ -541,12 +1192,12 @@ class GameNotifier extends StateNotifier<GameState> {
 
     nextTeams[teamIndex] = team.copyWith(mals: updatedMals);
 
+    // 포획 및 말 이동 결과 먼저 반영
     if (landingNodeId != PathFinder.finishNodeId) {
       for (int i = 0; i < nextTeams.length; i++) {
         if (i == teamIndex) continue;
         final otherTeam = nextTeams[i];
 
-        // Find if ANY opponent mal is at the landing spot
         final isOccupied = otherTeam.mals.any(
           (m) => m.currentNodeId == landingNodeId,
         );
@@ -554,7 +1205,6 @@ class GameNotifier extends StateNotifier<GameState> {
         if (isOccupied) {
           caughtOpponent = true;
           if (otherTeam.isHuman) caughtHuman = true;
-          // Reset EVERY mal on that node (handles stacked mals)
           final resetMals = otherTeam.mals.map((m) {
             if (m.currentNodeId == landingNodeId) {
               return m.copyWith(
@@ -562,7 +1212,7 @@ class GameNotifier extends StateNotifier<GameState> {
                 lastNodeId: null,
                 historyNodeIds: [],
                 isFinished: false,
-              ); // Back to start circle
+              );
             }
             return m;
           }).toList();
@@ -571,7 +1221,20 @@ class GameNotifier extends StateNotifier<GameState> {
       }
     }
 
+    // 아이템 로직 실행 전에 이동 상태를 먼저 커밋 (데이터 정합성 보장)
+    state = state.copyWith(teams: nextTeams);
+    // 재참조 (포획 등으로 변경된 상태 반영)
+    nextTeams = List<Team>.from(state.teams);
+
     final newThrows = List<YutResult>.from(state.currentThrows)..removeAt(0);
+    // 아이템 획득 로직
+    if (state.activeConfig.useItemMode &&
+        state.itemTiles.contains(landingNodeId) &&
+        landingNodeId != PathFinder.finishNodeId) {
+      _handleItemAcquisition(teamIndex, landingNodeId!);
+      // 아이템 획득 후 최신화된 teams 정보 가져오기
+      nextTeams = List<Team>.from(state.teams);
+    }
 
     // UPDATE TEAMS STATE AND CLEAR PREVIOUS RESULT
     state = state.copyWith(
@@ -579,7 +1242,7 @@ class GameNotifier extends StateNotifier<GameState> {
       currentThrows: newThrows,
       movingMalId: null,
       currentPath: [],
-      lastResult: null, // Clear the result after it has been used for movement
+      lastResult: null,
     );
 
     if (caughtOpponent) {
@@ -626,30 +1289,44 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
+  List<Mal> _getMovableMalsForCurrentThrow(Team team, YutResult result) {
+    return team.mals.where((m) {
+      if (m.isFinished) return false;
+      // 빽도인데 판 위에 말이 없는 경우 (단, 빽도 날기 규칙 제외)
+      if (result == YutResult.backDo && m.currentNodeId == null) {
+        if (!state.activeConfig.backDoFlying) return false;
+      }
+      return true;
+    }).toList();
+  }
+
   void _checkAutoMove() {
     if (state.status != GameStatus.selectingMal || !state.currentTeam.isHuman)
       return;
     if (state.currentThrows.isEmpty) return;
 
+    // 뒷걸음질 아이템이 활성화된 경우 자동 이동 방지 (방향 선택 필요)
+    if (state.moonwalkActive) return;
+
     final result = state.currentThrows.first;
     final team = state.currentTeam;
 
-    // Find movable mals
-    final movableMals = team.mals.where((m) {
-      if (m.isFinished) return false;
-      if (result == YutResult.backDo && m.currentNodeId == null) return false;
-      return true;
-    }).toList();
+    // 움직일 수 있는 말 찾기
+    final movableMals = _getMovableMalsForCurrentThrow(team, result);
 
-    // If only one mal (or one stack) is movable, auto-select it
-    // Note: yutnori often groups pieces at the same position.
-    final distinctPositions = movableMals.map((m) => m.currentNodeId).toSet();
+    if (movableMals.isEmpty) return;
 
-    if (distinctPositions.length == 1) {
-      // All movable pieces are at the same spot (or there's only one piece)
+    // 모든 움직일 수 있는 말의 위치가 동일한지 확인 (null 포함)
+    final firstPos = movableMals.first.currentNodeId;
+    final allSamePos = movableMals.every((m) => m.currentNodeId == firstPos);
+
+    if (allSamePos) {
+      // 모든 말이 같은 위치(예: 시작점 또는 업힌 상태)라면 자동 선택
       final malToMove = movableMals.first;
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted && state.status == GameStatus.selectingMal) {
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (mounted &&
+            state.status == GameStatus.selectingMal &&
+            !state.moonwalkActive) {
           selectMal(malToMove.id);
         }
       });
@@ -685,15 +1362,34 @@ class GameNotifier extends StateNotifier<GameState> {
       return;
     }
 
-    // 다음 기권하지 않은 팀 찾기
+    // 다음 기권하지 않은 팀 찾기 (얼음탄 체크 포함)
     int nextTurnIndex = (state.turnIndex + 1) % state.teams.length;
     int attempts = 0;
+    final nextTeams = List<Team>.from(state.teams);
+    bool stateModified = false;
 
-    // 최대 팀 수만큼 시도하여 기권하지 않은 팀 찾기
-    while (state.teams[nextTurnIndex].hasForfeit &&
-        attempts < state.teams.length) {
-      nextTurnIndex = (nextTurnIndex + 1) % state.teams.length;
-      attempts++;
+    while (attempts < state.teams.length) {
+      final team = nextTeams[nextTurnIndex];
+      if (team.hasForfeit) {
+        nextTurnIndex = (nextTurnIndex + 1) % state.teams.length;
+        attempts++;
+        continue;
+      }
+
+      if (team.skipNextTurn) {
+        nextTeams[nextTurnIndex] = team.copyWith(skipNextTurn: false);
+        stateModified = true;
+        print('Skipping turn for ${team.name} (Frozen)');
+        nextTurnIndex = (nextTurnIndex + 1) % state.teams.length;
+        attempts++;
+        continue;
+      }
+
+      break; // 유효한 팀 발견
+    }
+
+    if (stateModified) {
+      state = state.copyWith(teams: nextTeams);
     }
 
     // 안전장치: 기권하지 않은 팀을 찾지 못한 경우
@@ -712,8 +1408,14 @@ class GameNotifier extends StateNotifier<GameState> {
       selectedMalId: null,
     );
 
-    if (!state.currentTeam.isHuman)
-      Future.delayed(const Duration(milliseconds: 1500), () => throwYut());
+    if (!state.currentTeam.isHuman) {
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (state.status == GameStatus.throwing) {
+          _aiProcessItems(); // 아이템 사용 검토
+          throwYut();
+        }
+      });
+    }
   }
 
   void forfeit(int teamIndex) {
@@ -788,6 +1490,140 @@ class GameNotifier extends StateNotifier<GameState> {
         break;
       default:
         break;
+    }
+  }
+
+  void _aiProcessItems() {
+    final teamIndex = state.turnIndex % state.teams.length;
+    final team = state.teams[teamIndex];
+    if (team.isHuman || team.items.isEmpty) return;
+
+    final difficulty = state.activeConfig.aiDifficulty;
+    // 난이도에 비례하여 아이템 사용 확률 (예: 난이도 5면 40% 확률)
+    if (Random().nextDouble() > (difficulty / 12.0)) return;
+
+    final nextTeams = List<Team>.from(state.teams);
+    final itemsCopy = List<ItemType>.from(team.items);
+
+    for (final item in itemsCopy) {
+      bool used = false;
+      switch (item) {
+        case ItemType.fixedDice: // 황금 윷
+          // 판 위에 내 말이 없으면 사용
+          if (team.mals.every((m) => m.currentNodeId == null)) {
+            _useFixedDice(teamIndex);
+            used = true;
+          }
+          break;
+        case ItemType.freeze: // 얼음탄
+          // 다음 상대 팀의 말이 골인에 가까우면 사용
+          final nextTeamIdx = (teamIndex + 1) % state.teams.length;
+          final nextTeam = state.teams[nextTeamIdx];
+          if (nextTeam.mals.any(
+            (m) => m.currentNodeId != null && m.currentNodeId! > 15,
+          )) {
+            _useFreeze(teamIndex);
+            used = true;
+          }
+          break;
+        case ItemType.banish: // 강제 귀가
+          // 가장 멀리 간 상대 말 찾기
+          int? bestTargetId;
+          int maxPos = -1;
+          for (var t in state.teams) {
+            if (t.color == team.color) continue;
+            for (var m in t.mals) {
+              if (m.currentNodeId != null && m.currentNodeId! > maxPos) {
+                maxPos = m.currentNodeId!;
+                bestTargetId = m.id;
+              }
+            }
+          }
+          if (bestTargetId != null && maxPos > 10) {
+            state = state.copyWith(status: GameStatus.awaitingBanishTarget);
+            handleMalSelectionForItem(bestTargetId);
+            used = true;
+          }
+          break;
+        case ItemType.magnet: // 자석
+          // 주위에 상대 말이 2개 이상이면 사용
+          int catchCount = 0;
+          for (var myMal in team.mals) {
+            if (myMal.currentNodeId == null || myMal.isFinished) continue;
+            final nearby = _getNodesWithinDistance(myMal.currentNodeId!, 3);
+            for (var t in state.teams) {
+              if (t.color == team.color) continue;
+              catchCount += t.mals
+                  .where(
+                    (m) =>
+                        m.currentNodeId != null &&
+                        nearby.contains(m.currentNodeId),
+                  )
+                  .length;
+            }
+          }
+          if (catchCount >= 2) {
+            _useMagnet(teamIndex);
+            used = true;
+          }
+          break;
+        case ItemType.swap: // 위치 교환
+          // 내 말은 시작점에 있고, 상대 말은 골인 직전일 때
+          int? myStartMalId = team.mals
+              .firstWhere(
+                (m) => m.currentNodeId != null && m.currentNodeId! < 5,
+                orElse: () => team.mals.first,
+              )
+              .id;
+          int? enemyTargetId;
+          int maxPos = -1;
+          for (var t in state.teams) {
+            if (t.color == team.color) continue;
+            for (var m in t.mals) {
+              if (m.currentNodeId != null && m.currentNodeId! > maxPos) {
+                maxPos = m.currentNodeId!;
+                enemyTargetId = m.id;
+              }
+            }
+          }
+          if (maxPos > 20 && myStartMalId != null && enemyTargetId != null) {
+            state = state.copyWith(status: GameStatus.awaitingSwapSource);
+            handleMalSelectionForItem(myStartMalId);
+            handleMalSelectionForItem(enemyTargetId);
+            used = true;
+          }
+          break;
+        case ItemType.typhoon: // 태풍
+          // 내가 대세에서 밀리고 있을 때 (상대 팀 중 하나가 완주가 많거나 멀리 갔을 때)
+          bool losing = false;
+          for (var t in state.teams) {
+            if (t.color == team.color) continue;
+            if (t.mals.where((m) => m.isFinished).length >
+                team.mals.where((m) => m.isFinished).length)
+              losing = true;
+            if (t.mals.any(
+              (m) => m.currentNodeId != null && m.currentNodeId! > 20,
+            ))
+              losing = true;
+          }
+          if (losing) {
+            _useTyphoon(teamIndex);
+            used = true;
+          }
+          break;
+        default:
+          break;
+      }
+
+      if (used) {
+        final currentTeams = List<Team>.from(state.teams);
+        final currentTeam = currentTeams[teamIndex];
+        final updatedItems = List<ItemType>.from(currentTeam.items)
+          ..remove(item);
+        currentTeams[teamIndex] = currentTeam.copyWith(items: updatedItems);
+        state = state.copyWith(teams: currentTeams);
+        break; // 한 턴에 하나만 사용
+      }
     }
   }
 
