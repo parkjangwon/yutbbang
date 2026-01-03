@@ -102,7 +102,7 @@ class BoardGraph {
       id: 20,
       x: 0.5,
       y: 0.5,
-      nextId: 23, // 5 -> 20 -> 15 대각선 직진 방향
+      nextId: 27, // 10 -> 20 -> 0 대각선 완주 방향 (기본)
       prevId: 22,
     ); // Center
     map[23] = const BoardNode(id: 23, x: 0.35, y: 0.65, nextId: 24, prevId: 20);
@@ -112,7 +112,7 @@ class BoardGraph {
     // 10 -> 25 -> 26 -> 20 (Center) -> 27 -> 28 -> 0
     map[25] = const BoardNode(id: 25, x: 0.2, y: 0.2, nextId: 26, prevId: 10);
     map[26] = const BoardNode(id: 26, x: 0.35, y: 0.35, nextId: 20, prevId: 25);
-    // Note: Node 20 is already defined, but it needs logic to pick 27 or 23 depending on where it came from
+    // Note: Node 20 is already defined.
     // We update its shortcut id later.
 
     map[27] = const BoardNode(id: 27, x: 0.65, y: 0.65, nextId: 28, prevId: 20);
@@ -121,9 +121,13 @@ class BoardGraph {
     // Apply Shortcuts
     map[5] = map[5]!.copyWithShortcut(21);
     map[10] = map[10]!.copyWithShortcut(25);
-    // 규칙: 중앙(20번)에 멈추면 다음 이동은 선택 없이 무조건 완주 방향(27번)으로 고정함.
-    // 기존 shortcutNextId였던 23번(좌하단 방향)은 이제 선택지로 제공되지 않음.
-    map[20] = map[20]!.copyWithShortcut(27);
+
+    // 사용자의 요구사항:
+    // 1. 첫번째(5), 두번째(10) 꼭짓점: 직진 or 지름길
+    // 2. 세번째(15) 꼭짓점: 직진 (이미 nextId가 16으로 설정됨)
+    // 3. 가운데(20): 우측 하단 방향 (완주 방향)
+    // 따라서 15번과 20번에는 shortcutNextId를 설정하지 않음으로써 선택지 없이 직진하도록 함.
+    // 20번의 nextId는 이미 _buildNodes에서 27번(완주 방향)으로 설정되어 있음.
 
     return map;
   }
