@@ -781,9 +781,10 @@ class GameNotifier extends StateNotifier<GameState> {
         (m) => m.currentNodeId != null && !m.isFinished,
       );
 
-      // 빽도 날기 규칙: 판 위에 말이 있어도 대기 중인 말이 빽도로 즉시 골인 가능하면 유효 처리
+      // 빽도 날기 규칙: 판 위에 말이 없는 경우 대기 중인 말이 빽도로 즉시 골인 가능
       bool canFly =
           state.activeConfig.backDoFlying &&
+          !piecesOnBoard &&
           team.mals.any((m) => m.currentNodeId == null && !m.isFinished);
 
       if (!piecesOnBoard && !canFly) {
@@ -986,7 +987,14 @@ class GameNotifier extends StateNotifier<GameState> {
         : null;
     if (result == null) return;
 
-    if (result == YutResult.backDo && mal.currentNodeId == null) return;
+    if (result == YutResult.backDo && mal.currentNodeId == null) {
+      if (!state.activeConfig.backDoFlying) return;
+      // 판 위에 말이 있는 경우 빽도 날기 불가 (판 위의 말을 먼저 움직여야 함)
+      final anyOnBoard = team.mals.any(
+        (m) => m.currentNodeId != null && !m.isFinished,
+      );
+      if (anyOnBoard) return;
+    }
 
     final node = BoardGraph.nodes[mal.currentNodeId ?? -1];
     if (mal.currentNodeId == 15) {
@@ -1373,14 +1381,22 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   List<Mal> _getMovableMalsForCurrentThrow(Team team, YutResult result) {
-    return team.mals.where((m) {
-      if (m.isFinished) return false;
-      // 빽도인데 판 위에 말이 없는 경우 (단, 빽도 날기 규칙 제외)
-      if (result == YutResult.backDo && m.currentNodeId == null) {
-        if (!state.activeConfig.backDoFlying) return false;
+    if (result == YutResult.backDo) {
+      // 1. 판 위에 말이 있으면 판 위의 말만 이동 가능
+      final onBoard = team.mals
+          .where((m) => m.currentNodeId != null && !m.isFinished)
+          .toList();
+      if (onBoard.isNotEmpty) return onBoard;
+
+      // 2. 판 위에 말이 없고 빽도 날기가 활성화된 경우 대기마 이동 가능
+      if (state.activeConfig.backDoFlying) {
+        return team.mals
+            .where((m) => m.currentNodeId == null && !m.isFinished)
+            .toList();
       }
-      return true;
-    }).toList();
+      return [];
+    }
+    return team.mals.where((m) => !m.isFinished).toList();
   }
 
   void _checkAutoMove() {
