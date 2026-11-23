@@ -15,11 +15,7 @@ class SettingsScreen extends ConsumerWidget {
     final update = ref.read(gameProvider.notifier).updateConfig;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('기본 설정'),
-        backgroundColor: Colors.brown,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: const Text('기본 설정')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -30,8 +26,6 @@ class SettingsScreen extends ConsumerWidget {
             max: 10,
             divisions: 9,
             label: config.aiDifficulty.toString(),
-            activeColor: Colors.brown,
-            thumbColor: Colors.brown,
             onChanged: (v) => update(config.copyWith(aiDifficulty: v.toInt())),
           ),
           const SizedBox(height: 10),

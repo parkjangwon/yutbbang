@@ -5,7 +5,7 @@ import '../../providers/game_provider.dart';
 import '../../providers/game_state.dart';
 import '../../screens/yut_guide_screen.dart';
 import 'game_status_text.dart';
-import 'team_colors.dart';
+import '../../theme/app_palette.dart';
 import 'turn_indicator.dart';
 
 /// 상단 정보 바 (AppBar처럼) - 현재 팀 색상 반영.
@@ -16,19 +16,9 @@ class GameTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 500),
+    return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: teamColorOf(state.currentTeam.color).withValues(alpha: 0.15),
-        border: Border(
-          bottom: BorderSide(
-            color: teamColorOf(state.currentTeam.color).withValues(alpha: 0.3),
-            width: 2,
-          ),
-        ),
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -124,12 +114,12 @@ class _CircleIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
+        color: AppPalette.surface,
         shape: BoxShape.circle,
-        boxShadow: [BoxShadow(blurRadius: 5, color: Colors.black12)],
+        boxShadow: AppPalette.cardShadow,
       ),
       child: IconButton(
-        icon: Icon(icon, color: Colors.brown, size: 26),
+        icon: Icon(icon, color: AppPalette.ink, size: 24),
         tooltip: tooltip,
         onPressed: onPressed,
       ),

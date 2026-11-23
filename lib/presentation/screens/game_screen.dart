@@ -15,6 +15,7 @@ import '../widgets/game/item_acquisition_popup.dart';
 import '../widgets/game/shortcut_choice_panel.dart';
 import '../widgets/game/victory_overlay.dart';
 import '../widgets/game/waiting_mals_area.dart';
+import '../widgets/app_background.dart';
 import '../widgets/gauge_widget.dart';
 import '../widgets/item_inventory.dart';
 import '../widgets/throw_button.dart';
@@ -46,29 +47,31 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
     return GameDialogHost(
       child: Scaffold(
-        backgroundColor: const Color(0xFFF3E5AB),
-        body: SafeArea(
-          child: Column(
-            children: [
-              GameTopBar(state: state),
-              Expanded(
-                child: landscape
-                    ? Row(
-                        children: [
-                          Expanded(child: board),
-                          SizedBox(
-                            width: 190,
-                            child: WaitingMalsArea(
-                              state: state,
-                              direction: Axis.vertical,
+        backgroundColor: Colors.transparent,
+        body: AppBackground(
+          child: SafeArea(
+            child: Column(
+              children: [
+                GameTopBar(state: state),
+                Expanded(
+                  child: landscape
+                      ? Row(
+                          children: [
+                            Expanded(child: board),
+                            SizedBox(
+                              width: 216,
+                              child: WaitingMalsArea(
+                                state: state,
+                                direction: Axis.vertical,
+                              ),
                             ),
-                          ),
-                        ],
-                      )
-                    : board,
-              ),
-              if (!landscape) WaitingMalsArea(state: state),
-            ],
+                          ],
+                        )
+                      : board,
+                ),
+                if (!landscape) WaitingMalsArea(state: state),
+              ],
+            ),
           ),
         ),
       ),

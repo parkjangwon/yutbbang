@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/game_provider.dart';
+import '../theme/app_palette.dart';
 
 class RerollChoiceDialog extends ConsumerWidget {
   const RerollChoiceDialog({super.key});
@@ -13,17 +14,8 @@ class RerollChoiceDialog extends ConsumerWidget {
     final resultLabel = result?.label ?? '?';
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
+      child: Padding(
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.blue.shade50, Colors.blue.shade100],
-          ),
-        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -31,14 +23,14 @@ class RerollChoiceDialog extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text('🔄', style: TextStyle(fontSize: 48)),
+                const Text('🔄', style: TextStyle(fontSize: 36)),
                 const SizedBox(width: 12),
                 const Text(
                   '다시 던지기',
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppPalette.ink,
                   ),
                 ),
               ],
@@ -47,23 +39,24 @@ class RerollChoiceDialog extends ConsumerWidget {
 
             // 안내 메시지
             Container(
-              padding: const EdgeInsets.all(12),
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.blue.shade200,
-                borderRadius: BorderRadius.circular(8),
+                color: AppPalette.surfaceSunken,
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 children: [
                   const Text(
                     '현재 결과',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF0D47A1)),
+                    style: TextStyle(fontSize: 14, color: AppPalette.inkMuted),
                   ),
                   Text(
                     resultLabel,
                     style: const TextStyle(
                       fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      fontWeight: FontWeight.w800,
+                      color: AppPalette.terracotta,
                     ),
                   ),
                 ],
@@ -74,9 +67,9 @@ class RerollChoiceDialog extends ConsumerWidget {
               '다시 던지기 아이템을 사용하시겠습니까?\n현재 결과는 무시됩니다.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: Colors.black54,
+                color: AppPalette.inkMuted,
               ),
             ),
             const SizedBox(height: 24),
@@ -88,9 +81,10 @@ class RerollChoiceDialog extends ConsumerWidget {
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: Colors.blue.shade600),
+                      foregroundColor: AppPalette.ink,
+                      side: const BorderSide(color: AppPalette.line),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                     onPressed: () {
@@ -102,7 +96,6 @@ class RerollChoiceDialog extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
                       ),
                     ),
                   ),
@@ -111,12 +104,7 @@ class RerollChoiceDialog extends ConsumerWidget {
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade600,
-                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
                     ),
                     onPressed: () {
                       ref.read(gameProvider.notifier).confirmReroll(true);

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/game_item.dart';
 import '../providers/game_provider.dart';
+import '../theme/app_palette.dart';
 
 class ItemChoiceDialog extends ConsumerWidget {
   final int nodeId;
@@ -24,17 +25,8 @@ class ItemChoiceDialog extends ConsumerWidget {
     final newItem = GameItem.fromType(pendingItem);
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
+      child: Padding(
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.amber.shade50, Colors.amber.shade100],
-          ),
-        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -42,14 +34,14 @@ class ItemChoiceDialog extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(newItem.emoji, style: const TextStyle(fontSize: 48)),
+                Text(newItem.emoji, style: const TextStyle(fontSize: 36)),
                 const SizedBox(width: 12),
                 const Text(
                   '아이템 획득!',
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.brown,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppPalette.ink,
                   ),
                 ),
               ],
@@ -58,11 +50,11 @@ class ItemChoiceDialog extends ConsumerWidget {
 
             // 새 아이템 정보
             Container(
+              width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.amber, width: 2),
+                color: AppPalette.terracottaSoft,
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 children: [
@@ -70,14 +62,18 @@ class ItemChoiceDialog extends ConsumerWidget {
                     newItem.name,
                     style: const TextStyle(
                       fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
+                      color: AppPalette.ink,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     newItem.description,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppPalette.inkMuted,
+                    ),
                   ),
                 ],
               ),
@@ -86,10 +82,11 @@ class ItemChoiceDialog extends ConsumerWidget {
 
             // 안내 메시지
             Container(
+              width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.shade100,
-                borderRadius: BorderRadius.circular(8),
+                color: AppPalette.surfaceSunken,
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Text(
                 '인벤토리가 꽉 찼습니다!\n기존 아이템을 교체하거나 새 아이템을 포기하세요.',
@@ -97,7 +94,7 @@ class ItemChoiceDialog extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Colors.brown,
+                  color: AppPalette.inkMuted,
                 ),
               ),
             ),
@@ -106,7 +103,11 @@ class ItemChoiceDialog extends ConsumerWidget {
             // 기존 아이템 선택
             const Text(
               '교체할 아이템 선택:',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppPalette.ink,
+              ),
             ),
             const SizedBox(height: 12),
             Row(
@@ -133,12 +134,10 @@ class ItemChoiceDialog extends ConsumerWidget {
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey.shade600,
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppPalette.surface,
+                  foregroundColor: AppPalette.inkMuted,
+                  side: const BorderSide(color: AppPalette.line),
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                 ),
                 onPressed: () {
                   ref.read(gameProvider.notifier).discardPendingItem();
@@ -146,7 +145,11 @@ class ItemChoiceDialog extends ConsumerWidget {
                 },
                 child: const Text(
                   '새 아이템 포기',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppPalette.ink,
+                  ),
                 ),
               ),
             ),
@@ -176,16 +179,10 @@ class ItemChoiceDialog extends ConsumerWidget {
         width: 100,
         height: 120,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.brown, width: 2),
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 8,
-              color: Colors.black.withValues(alpha: 0.1),
-              offset: const Offset(0, 2),
-            ),
-          ],
+          color: AppPalette.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppPalette.line),
+          boxShadow: AppPalette.cardShadow,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -200,6 +197,7 @@ class ItemChoiceDialog extends ConsumerWidget {
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
+                  color: AppPalette.ink,
                 ),
               ),
             ),

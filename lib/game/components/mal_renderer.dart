@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:material_ui/material_ui.dart';
 
 import '../../domain/models/team.dart';
+import '../../presentation/widgets/game/team_colors.dart';
 
 /// 말(MalComponent)의 캔버스 그리기 helper.
 abstract final class MalRenderer {
@@ -20,7 +21,9 @@ abstract final class MalRenderer {
     canvas.drawCircle(
       center + const Offset(0, 4),
       radius,
-      Paint()..color = Colors.black26,
+      Paint()
+        ..color = const Color(0x334A3B30)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
     );
     canvas.drawCircle(
       center + const Offset(0, 2),
@@ -29,14 +32,16 @@ abstract final class MalRenderer {
     );
     canvas.drawCircle(center, radius, Paint()..color = color);
 
-    // Rim
+    // 무광 하이라이트(위쪽 살짝 밝게)
     canvas.drawCircle(
       center,
-      radius - 4,
+      radius,
       Paint()
-        ..color = Colors.white24
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
+        ..shader = RadialGradient(
+          center: const Alignment(-0.3, -0.5),
+          radius: 0.9,
+          colors: [Colors.white.withValues(alpha: 0.22), Colors.transparent],
+        ).createShader(Rect.fromCircle(center: center, radius: radius)),
     );
 
     // 팀 글자(색각 이상 사용자도 구분할 수 있게)
@@ -47,7 +52,7 @@ abstract final class MalRenderer {
           color: Colors.white,
           fontWeight: FontWeight.w900,
           fontSize: radius * 0.9,
-          shadows: const [Shadow(blurRadius: 2, color: Colors.black45)],
+          shadows: const [Shadow(blurRadius: 1, color: Color(0x404A3B30))],
         ),
       ),
       textDirection: TextDirection.ltr,
@@ -72,31 +77,25 @@ abstract final class MalRenderer {
   }
 
   /// 선택 가능한 말 주위의 맥박 효과.
-  static void paintSelectionPulse(Canvas canvas, Offset center, double radius) {
+  static void paintSelectionPulse(
+    Canvas canvas,
+    Offset center,
+    double radius, [
+    Color color = Colors.white,
+  ]) {
     final pulse =
         0.5 + 0.5 * math.sin(DateTime.now().millisecondsSinceEpoch / 200);
     canvas.drawCircle(
       center,
       radius + 2 + pulse * 6,
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.3 * (1 - pulse))
+        ..color = color.withValues(alpha: 0.45 * (1 - pulse))
         ..style = PaintingStyle.stroke
         ..strokeWidth = 4,
     );
   }
 
-  static Color rawColor(TeamColor color) {
-    switch (color) {
-      case TeamColor.orange:
-        return Colors.orange;
-      case TeamColor.green:
-        return Colors.green;
-      case TeamColor.red:
-        return Colors.red;
-      case TeamColor.blue:
-        return Colors.blue;
-    }
-  }
+  static Color rawColor(TeamColor color) => teamColorOf(color);
 
   static Color darkerColor(Color color) {
     return Color.fromARGB(

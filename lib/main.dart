@@ -1,8 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'presentation/screens/lobby_screen.dart';
+import 'presentation/theme/app_theme.dart';
 
 void main() {
   runApp(const ProviderScope(child: YutApp()));
@@ -16,14 +16,7 @@ class YutApp extends StatelessWidget {
     return MaterialApp(
       title: '윷빵 (yutbbang)',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.brown,
-          brightness: Brightness.light,
-        ),
-        textTheme: GoogleFonts.nanumGothicTextTheme(),
-      ),
+      theme: buildAppTheme(),
       home: const LobbyScreen(),
     );
   }

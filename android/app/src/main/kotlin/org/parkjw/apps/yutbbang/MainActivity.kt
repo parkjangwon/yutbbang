@@ -1,4 +1,4 @@
-package org.parkjw.yutbbang
+package org.parkjw.apps.yutbbang
 
 import io.flutter.embedding.android.FlutterActivity
 

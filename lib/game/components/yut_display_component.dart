@@ -5,6 +5,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../../domain/models/yut_result.dart';
+import '../../presentation/theme/app_assets.dart';
+import '../yut_stick_layout.dart';
 import 'yut_stick_painter.dart';
 
 class YutDisplayComponent extends PositionComponent
@@ -20,9 +22,25 @@ class YutDisplayComponent extends PositionComponent
     anchor = Anchor.center;
   }
 
+  YutStickSprites? _sprites;
+
   @override
   Future<void> onLoad() async {
     _initIdleSticks();
+    try {
+      final images = await Future.wait([
+        game.images.load(AppAssets.yutFlat),
+        game.images.load(AppAssets.yutFlatBackDo),
+        game.images.load(AppAssets.yutRound),
+      ]);
+      _sprites = YutStickSprites(
+        flat: images[0],
+        flatBackDo: images[1],
+        round: images[2],
+      );
+    } catch (_) {
+      // 이미지를 못 불러오면 캔버스로 그린 윷가락을 쓴다.
+    }
   }
 
   @override
@@ -33,18 +51,16 @@ class YutDisplayComponent extends PositionComponent
     }
   }
 
+  /// 윷가락이 쉬는 자리(판을 가리지 않는 곳).
+  List<Vector2> get _restPositions =>
+      YutStickLayout(game.size.toSize()).restPositions
+          .map((o) => Vector2(o.dx, o.dy))
+          .toList();
+
   void _initIdleSticks() {
-    final centerX = game.size.x / 2;
-
-    // Responsive positioning based on aspect ratio
-    final aspectRatio = game.size.x / game.size.y;
-    final centerY = aspectRatio > 0.7
-        ? game.size.y *
-              0.72 // Wide screen: inside board, below center
-        : game.size.y * 0.82; // Narrow screen: outside board, at bottom
-
+    final rest = _restPositions;
     _sticks = List.generate(4, (i) {
-      final pos = Vector2(centerX + (i - 1.5) * 45, centerY);
+      final pos = rest[i];
       return StickConfig(
         position: pos.clone(),
         targetPosition: pos.clone(),
@@ -80,12 +96,8 @@ class YutDisplayComponent extends PositionComponent
     // Haptic feedback: Throw start
     HapticFeedback.heavyImpact();
 
-    final centerX = game.size.x / 2;
-
-    // Responsive positioning
-    final aspectRatio = game.size.x / game.size.y;
-    final startY = aspectRatio > 0.7 ? game.size.y * 0.72 : game.size.y * 0.82;
-    final targetY = aspectRatio > 0.7 ? game.size.y * 0.45 : game.size.y * 0.45;
+    // 쉬는 자리에서 던져 올려, 다시 쉬는 자리(판 밖)에 내려앉는다.
+    final rest = _restPositions;
 
     // Use slots to guarantee NO OVERLAP
     List<int> slots = [0, 1, 2, 3]..shuffle(_random);
@@ -95,7 +107,7 @@ class YutDisplayComponent extends PositionComponent
     final nakStickIndex = isNak ? _random.nextInt(4) : -1;
 
     for (int i = 0; i < 4; i++) {
-      _sticks[i].position = Vector2(centerX + (i - 1.5) * 45, startY);
+      _sticks[i].position = rest[i].clone();
       _sticks[i].angle = 0.0;
       _sticks[i].isFlat = newStickStates[i];
 
@@ -115,10 +127,10 @@ class YutDisplayComponent extends PositionComponent
             (_random.nextDouble() * 20 + 15) * (_random.nextBool() ? 1 : -1);
       } else {
         // Normal landing
-        final slotX = centerX + (slots[i] - 1.5) * 65;
+        final slot = rest[slots[i]];
         _sticks[i].targetPosition = Vector2(
-          slotX,
-          targetY + (_random.nextDouble() - 0.5) * 60,
+          slot.x,
+          slot.y + (_random.nextDouble() - 0.5) * 8,
         );
 
         _sticks[i].velocity = Vector2(
@@ -134,14 +146,9 @@ class YutDisplayComponent extends PositionComponent
   }
 
   void _syncInitialSticks(List<bool> states) {
-    final centerX = game.size.x / 2;
-
-    // Responsive positioning
-    final aspectRatio = game.size.x / game.size.y;
-    final centerY = aspectRatio > 0.7 ? game.size.y * 0.72 : game.size.y * 0.82;
-
+    final rest = _restPositions;
     for (int i = 0; i < 4; i++) {
-      _sticks[i].position = Vector2(centerX + (i - 1.5) * 45, centerY);
+      _sticks[i].position = rest[i].clone();
       _sticks[i].targetPosition = _sticks[i].position.clone();
       _sticks[i].isFlat = states[i];
       _sticks[i].angle = states[i] ? pi : 0.0;
@@ -209,6 +216,7 @@ class YutDisplayComponent extends PositionComponent
         _sticks[i],
         shadowZ: shadowZ.toDouble(),
         hasBackDoMark: i == 0,
+        sprites: _sprites,
       );
     }
   }

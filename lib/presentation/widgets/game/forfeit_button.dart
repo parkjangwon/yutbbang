@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/game_provider.dart';
 import '../../providers/game_state.dart';
+import '../../theme/app_palette.dart';
 
 /// 기권 버튼 (좌측 하단) + 확인 다이얼로그.
 class ForfeitButton extends ConsumerWidget {
@@ -25,27 +26,14 @@ class ForfeitButton extends ConsumerWidget {
           height: 75,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isGameActive
-                  ? [Colors.red.shade400, Colors.red.shade800]
-                  : [Colors.grey.shade400, Colors.grey.shade600],
-            ),
+            color: AppPalette.danger,
             boxShadow: [
               BoxShadow(
-                blurRadius: 15,
-                spreadRadius: 0,
-                color: isGameActive
-                    ? Colors.red.withValues(alpha: 0.4)
-                    : Colors.grey.withValues(alpha: 0.3),
-                offset: const Offset(0, 4),
+                color: AppPalette.danger.withValues(alpha: 0.35),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.4),
-              width: 2,
-            ),
           ),
           child: const Center(
             child: Column(
@@ -56,7 +44,7 @@ class ForfeitButton extends ConsumerWidget {
                   '기권',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white70,
+                    color: Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),

@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../domain/models/game_rule_config.dart';
+import '../../theme/app_palette.dart';
 import 'setup_widgets.dart';
 
 /// 켜고 끄는 규칙 하나: 화면 문구와 설정 값 읽기/쓰기.
@@ -178,8 +179,6 @@ class MalCountSlider extends StatelessWidget {
           max: 5,
           divisions: 3,
           label: config.malCount.toString(),
-          activeColor: Colors.brown,
-          thumbColor: Colors.brown,
           onChanged: (v) => onChanged(config.copyWith(malCount: v.toInt())),
         ),
         const SizedBox(height: 10),
@@ -203,7 +202,7 @@ class SectionHeader extends StatelessWidget {
       style: TextStyle(
         fontSize: large ? 22 : 18,
         fontWeight: FontWeight.bold,
-        color: large ? Colors.brown : null,
+        color: large ? AppPalette.ink : AppPalette.inkMuted,
       ),
     );
   }

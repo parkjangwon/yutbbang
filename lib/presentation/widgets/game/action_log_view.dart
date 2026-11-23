@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../providers/game_state.dart';
+import '../../theme/app_palette.dart';
 
 /// 최근 행동 기록(최대 3줄). CPU가 무엇을 했는지 따라갈 수 있게 한다.
 class ActionLogView extends StatelessWidget {
@@ -22,10 +23,11 @@ class ActionLogView extends StatelessWidget {
       child: Semantics(
         liveRegion: true,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.75),
-            borderRadius: BorderRadius.circular(10),
+            color: AppPalette.surface.withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: AppPalette.cardShadow,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -38,9 +40,9 @@ class ActionLogView extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.brown.shade800.withValues(
-                      alpha: i == lines.length - 1 ? 1.0 : 0.6,
-                    ),
+                    color: i == lines.length - 1
+                        ? AppPalette.ink
+                        : AppPalette.inkMuted,
                     fontWeight: i == lines.length - 1
                         ? FontWeight.bold
                         : FontWeight.normal,

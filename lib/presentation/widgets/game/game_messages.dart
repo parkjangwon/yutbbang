@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../theme/app_palette.dart';
+
 /// 아이템 시스템 메시지 (토스트).
 class GameToastMessage extends StatelessWidget {
   final String message;
@@ -19,22 +21,16 @@ class GameToastMessage extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.black87,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
+                color: AppPalette.ink.withValues(alpha: 0.92),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: AppPalette.cardShadow,
               ),
               child: Text(
                 message,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -65,34 +61,17 @@ class BonusMessageOverlay extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Colors.orangeAccent, Colors.deepOrange],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(25),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.orange.withValues(alpha: 0.5),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-                border: Border.all(color: Colors.white, width: 3),
+                color: AppPalette.surface,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: AppPalette.cardShadow,
+                border: Border.all(color: AppPalette.terracottaSoft, width: 2),
               ),
               child: Text(
                 message,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppPalette.terracotta,
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
-                  shadows: [
-                    Shadow(
-                      color: Colors.black45,
-                      offset: Offset(2, 2),
-                      blurRadius: 4,
-                    ),
-                  ],
                 ),
               ),
             ),

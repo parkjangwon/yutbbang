@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/game_provider.dart';
 import '../../providers/game_state.dart';
+import '../../theme/app_palette.dart';
 
 /// 지름길 선택 오버레이.
 class ShortcutChoicePanel extends StatelessWidget {
@@ -38,15 +39,10 @@ class ShortcutChoicePanel extends StatelessWidget {
         width: 320,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(35),
-          boxShadow: const [
-            BoxShadow(
-              blurRadius: 40,
-              color: Colors.black38,
-              offset: Offset(0, 10),
-            ),
-          ],
+          color: AppPalette.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppPalette.line),
+          boxShadow: AppPalette.cardShadow,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -54,28 +50,28 @@ class ShortcutChoicePanel extends StatelessWidget {
             const Text(
               "경로 선택",
               style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w900,
-                color: Colors.brown,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppPalette.ink,
               ),
             ),
             const SizedBox(height: 10),
-            Text(
+            const Text(
               "어느 방향으로 이동할까요?",
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+              style: TextStyle(color: AppPalette.inkMuted, fontSize: 15),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 24),
             ShortcutDecisionButton(
               label: shortcutLabel,
               value: true,
-              color: Colors.blueAccent,
+              color: AppPalette.terracotta,
               icon: Icons.alt_route,
             ),
             const SizedBox(height: 12),
             ShortcutDecisionButton(
               label: straightLabel,
               value: false,
-              color: Colors.green.shade600,
+              color: AppPalette.sage,
               icon: Icons.arrow_forward,
             ),
           ],
@@ -107,17 +103,13 @@ class ShortcutDecisionButton extends ConsumerWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          elevation: 5,
+          padding: const EdgeInsets.symmetric(vertical: 16),
         ),
         onPressed: () => ref.read(gameProvider.notifier).chooseShortcut(value),
         icon: Icon(icon, size: 24),
         label: Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
         ),
       ),
     );

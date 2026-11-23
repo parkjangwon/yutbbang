@@ -220,7 +220,12 @@ class MalComponent extends PositionComponent
     MalRenderer.paintCoin(canvas, center, radius, mal.color, stackCount);
 
     if (ref.read(gameProvider).isMalHighlighted(mal)) {
-      MalRenderer.paintSelectionPulse(canvas, center, radius);
+      MalRenderer.paintSelectionPulse(
+        canvas,
+        center,
+        radius,
+        MalRenderer.rawColor(mal.color),
+      );
     }
   }
 

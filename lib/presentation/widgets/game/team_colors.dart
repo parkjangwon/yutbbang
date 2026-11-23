@@ -1,31 +1,28 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../domain/models/team.dart';
+import '../../theme/app_palette.dart';
 
-/// 팀 색상 → UI 색상.
-Color teamColorOf(TeamColor color) {
-  switch (color) {
-    case TeamColor.orange:
-      return Colors.orange;
-    case TeamColor.green:
-      return Colors.green;
-    case TeamColor.red:
-      return Colors.red;
-    case TeamColor.blue:
-      return Colors.blue;
-  }
-}
+/// 팀 색상 → UI 색상(모던 미니멀 팔레트).
+Color teamColorOf(TeamColor color) => switch (color) {
+  TeamColor.orange => AppPalette.terracotta,
+  TeamColor.green => AppPalette.sage,
+  TeamColor.red => AppPalette.berry,
+  TeamColor.blue => AppPalette.slate,
+};
 
 /// 팀 색상의 어두운 변형(말 그림자 레이어용).
-Color darkerTeamColorOf(TeamColor color) {
-  switch (color) {
-    case TeamColor.orange:
-      return Colors.orange.shade800;
-    case TeamColor.green:
-      return Colors.green.shade800;
-    case TeamColor.red:
-      return Colors.red.shade800;
-    case TeamColor.blue:
-      return Colors.blue.shade800;
-  }
-}
+Color darkerTeamColorOf(TeamColor color) =>
+    Color.lerp(teamColorOf(color), Colors.black, 0.25)!;
+
+/// 팀 색상의 옅은 변형(카드 바탕용).
+Color softTeamColorOf(TeamColor color) =>
+    Color.lerp(teamColorOf(color), Colors.white, 0.82)!;
+
+/// 화면에 보이는 팀 색 이름(실제 팔레트 색 기준).
+String teamColorNameOf(TeamColor color) => switch (color) {
+  TeamColor.orange => '주황',
+  TeamColor.green => '초록',
+  TeamColor.red => '자주',
+  TeamColor.blue => '파랑',
+};

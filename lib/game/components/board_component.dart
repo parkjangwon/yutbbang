@@ -9,6 +9,7 @@ import '../board_layout.dart';
 import '../yut_game.dart';
 import '../../presentation/providers/game_provider.dart';
 import '../../presentation/providers/game_view.dart';
+import '../../presentation/theme/app_palette.dart';
 import 'mal_renderer.dart';
 
 class BoardComponent extends PositionComponent with HasGameReference {
@@ -36,23 +37,28 @@ class BoardComponent extends PositionComponent with HasGameReference {
     final layout = this.layout;
     final rect = size.toRect();
 
-    // Board Border & Background
+    // 판 바탕: 흰 카드 + 부드러운 그림자 + 얇은 테두리
+    final card = RRect.fromRectAndRadius(rect, const Radius.circular(28));
     canvas.drawRRect(
-      RRect.fromRectAndRadius(rect, const Radius.circular(24)),
-      Paint()..color = const Color(0xFFFAF9F6),
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(rect, const Radius.circular(24)),
+      card.shift(const Offset(0, 8)),
       Paint()
-        ..color = Colors.brown.shade100
+        ..color = const Color(0x224A3B30)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18),
+    );
+    canvas.drawRRect(card, Paint()..color = AppPalette.boardSurface);
+    canvas.drawRRect(
+      card,
+      Paint()
+        ..color = AppPalette.line
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 4,
+        ..strokeWidth = 1.5,
     );
 
-    // Connection Lines
+    // 연결선: 얇은 선
     final linePaint = Paint()
-      ..color = Colors.brown.shade100
-      ..strokeWidth = 3;
+      ..color = AppPalette.boardLine
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
     for (final node in BoardGraph.nodes.values) {
       final start = layout.nodeOffset(node.x, node.y);
       void drawTo(int? targetId) {
@@ -68,21 +74,31 @@ class BoardComponent extends PositionComponent with HasGameReference {
       drawTo(node.shortcutNextId);
     }
 
-    // Nodes (Circles) - Exactly representing the board rules
-    final nodePaint = Paint()..color = Colors.white;
-    final nodeBorderPaint = Paint()
-      ..color = Colors.brown.shade200
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
-    final specialPaint = Paint()..color = const Color(0xFFFFF4E0);
-
+    // 칸: 흰 원(꼭짓점·중앙은 모래색 큰 원)
     for (final node in BoardGraph.nodes.values) {
       final pos = layout.nodeOffset(node.x, node.y);
       final radius = layout.nodeRadius(node.id);
       final isMajor = BoardLayout.isMajorNode(node.id);
 
-      canvas.drawCircle(pos, radius, isMajor ? specialPaint : nodePaint);
-      canvas.drawCircle(pos, radius, nodeBorderPaint);
+      canvas.drawCircle(
+        pos + const Offset(0, 1.5),
+        radius,
+        Paint()..color = const Color(0x144A3B30),
+      );
+      canvas.drawCircle(
+        pos,
+        radius,
+        Paint()
+          ..color = isMajor ? AppPalette.majorNodeFill : AppPalette.nodeFill,
+      );
+      canvas.drawCircle(
+        pos,
+        radius,
+        Paint()
+          ..color = isMajor ? AppPalette.majorNodeBorder : AppPalette.nodeBorder
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
     }
 
     // 아이템 타일 표시 (황금색)
@@ -99,9 +115,10 @@ class BoardComponent extends PositionComponent with HasGameReference {
 
     final color = MalRenderer.rawColor(state.currentTeam.color);
     final ring = Paint()
-      ..color = color
+      ..color = AppPalette.highlight
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round;
 
     for (final preview in previews) {
       final pos = layout.nodeOffsetById(preview.nodeId);
@@ -156,7 +173,7 @@ class BoardComponent extends PositionComponent with HasGameReference {
 
         // 황금색 외곽 글로우
         final glowPaint = Paint()
-          ..color = Colors.amber.withValues(alpha: 0.5)
+          ..color = AppPalette.highlight.withValues(alpha: 0.35)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
         canvas.drawCircle(pos, radius, glowPaint);
 

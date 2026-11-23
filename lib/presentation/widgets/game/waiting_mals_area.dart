@@ -5,6 +5,7 @@ import '../../../domain/models/team.dart';
 import '../../providers/game_provider.dart';
 import '../../providers/game_state.dart';
 import '../../providers/game_view.dart';
+import '../../theme/app_palette.dart';
 import 'team_colors.dart';
 
 /// 팀별 대기 말·골인 현황 패널. 세로 화면은 하단 가로줄, 가로 화면은 오른쪽 세로줄.
@@ -23,9 +24,16 @@ class WaitingMalsArea extends ConsumerWidget {
     final horizontal = direction == Axis.horizontal;
     return Container(
       width: horizontal ? double.infinity : null,
-      height: horizontal ? 96 : double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      color: Colors.black.withValues(alpha: 0.05),
+      height: horizontal ? 104 : double.infinity,
+      margin: horizontal
+          ? const EdgeInsets.fromLTRB(12, 0, 12, 12)
+          : const EdgeInsets.fromLTRB(0, 8, 12, 12),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppPalette.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AppPalette.cardShadow,
+      ),
       child: Flex(
         direction: direction,
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -86,12 +94,16 @@ class _TeamPanel extends StatelessWidget {
       excludeSemantics: true,
       child: GestureDetector(
         onTap: canTap ? () => onSelect(waiting.first.id) : null,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: canTap ? 0.5 : 0.3),
-            borderRadius: BorderRadius.circular(8),
-            border: canTap ? Border.all(color: color, width: 2) : null,
+            color: softTeamColorOf(team.color),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: canTap ? color : Colors.transparent,
+              width: 2,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -103,7 +115,12 @@ class _TeamPanel extends StatelessWidget {
                   label: team.color.letter,
                 ),
               ),
-              const SizedBox(width: 8),
+              Container(
+                width: 1,
+                height: 32,
+                margin: const EdgeInsets.symmetric(horizontal: 10),
+                color: color.withValues(alpha: 0.3),
+              ),
               Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,7 +129,8 @@ class _TeamPanel extends StatelessWidget {
                     'x${waiting.length}',
                     style: const TextStyle(
                       fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
+                      color: AppPalette.ink,
                     ),
                   ),
                   Text(
@@ -120,6 +138,7 @@ class _TeamPanel extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
+                      color: AppPalette.inkMuted,
                     ),
                   ),
                 ],
@@ -132,7 +151,7 @@ class _TeamPanel extends StatelessWidget {
   }
 }
 
-/// 입체감 있는 대기 말 아이콘.
+/// 대기 말 아이콘(무광 원판 + 팀 글자).
 class WaitingMalToken extends StatelessWidget {
   final TeamColor color;
   final String label;
@@ -141,66 +160,33 @@ class WaitingMalToken extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final base = teamColorOf(color);
     return Container(
       width: 44,
       height: 44,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
+        gradient: RadialGradient(
+          center: const Alignment(-0.3, -0.5),
+          radius: 1.0,
+          colors: [Color.lerp(base, Colors.white, 0.18)!, base],
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 4,
-            offset: const Offset(0, 4),
+            color: darkerTeamColorOf(color).withValues(alpha: 0.35),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // 그림자 레이어
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: darkerTeamColorOf(color),
-            ),
-          ),
-          // 메인 레이어
-          Container(
-            width: 44,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  teamColorOf(color).withValues(alpha: 0.9),
-                  teamColorOf(color),
-                ],
-              ),
-            ),
-          ),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              fontSize: 20,
-            ),
-          ),
-          // 하이라이트
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.3),
-                width: 2,
-              ),
-            ),
-          ),
-        ],
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+          fontSize: 20,
+        ),
       ),
     );
   }

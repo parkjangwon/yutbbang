@@ -54,31 +54,18 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
   Widget build(BuildContext context) {
     final config = _config;
     return Scaffold(
-      backgroundColor: const Color(0xFFFDF5E6),
-      appBar: AppBar(
-        title: const Text(
-          '게임 시작 설정',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.brown,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: const Text('게임 시작 설정')),
       // 시작 버튼은 스크롤과 관계없이 항상 하단에 보이게 고정한다.
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(24, 8, 24, 16),
         child: ElevatedButton(
           onPressed: _start,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
-            foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 18),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
           ),
           child: const Text(
             '배틀 시작!',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
           ),
         ),
       ),

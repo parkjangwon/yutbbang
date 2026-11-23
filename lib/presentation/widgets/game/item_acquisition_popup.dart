@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../domain/models/game_item.dart';
+import '../../theme/app_palette.dart';
 
 /// 아이템 획득 팝업 (토스트 스타일). Stack 안에서 Positioned로 배치된다.
 class ItemAcquisitionPopup extends StatelessWidget {
@@ -22,21 +23,15 @@ class ItemAcquisitionPopup extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           decoration: BoxDecoration(
-            color: Colors.brown.withValues(alpha: 0.95),
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.amber.withValues(alpha: 0.5),
-                blurRadius: 15,
-                spreadRadius: 2,
-              ),
-            ],
-            border: Border.all(color: Colors.amber, width: 3),
+            color: AppPalette.surface,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: AppPalette.cardShadow,
+            border: Border.all(color: AppPalette.line),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(item.emoji, style: const TextStyle(fontSize: 40)),
+              Text(item.emoji, style: const TextStyle(fontSize: 36)),
               const SizedBox(width: 16),
               Flexible(
                 child: Column(
@@ -46,15 +41,18 @@ class ItemAcquisitionPopup extends StatelessWidget {
                     Text(
                       '[$name] ${item.name} 획득!',
                       style: const TextStyle(
-                        color: Colors.amber,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        color: AppPalette.terracotta,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       item.description,
-                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      style: const TextStyle(
+                        color: AppPalette.inkMuted,
+                        fontSize: 14,
+                      ),
                     ),
                   ],
                 ),

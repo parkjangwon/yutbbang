@@ -47,6 +47,12 @@ flutter build web          # 로컬엔 Xcode가 없어 macOS 빌드 불가 → �
   - 타이머는 `testWidgets`의 fake async로 `tester.pump(Duration)` 해서 진행한다.
 - 게임 결과에 영향을 주는 난수는 `gameRandomProvider`로만 얻는다(테스트에서 override). 화면 연출용 난수는 예외.
 
+## 디자인
+
+- 스타일: 모던 미니멀(`docs/design/concept-modern-minimal.jpg`). 색은 `AppPalette`, 테마는 `buildAppTheme()`만 쓴다. 위젯에 `Colors.brown` 같은 색을 직접 쓰지 않는다.
+- 팀 색은 `teamColorOf` / `softTeamColorOf` / `darkerTeamColorOf`. 대비 기준은 `test/presentation/app_palette_test.dart`가 검사한다.
+- 이미지 에셋 경로는 `AppAssets`에만 둔다. 생성 방법·프롬프트는 `assets/images/README.md`.
+
 ## 기타
 
 - 브랜치 없이 `main`에서 작업한다.

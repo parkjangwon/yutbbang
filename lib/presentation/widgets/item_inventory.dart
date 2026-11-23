@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/game_item.dart';
 import '../providers/game_provider.dart';
+import '../theme/app_palette.dart';
 
 class ItemInventory extends ConsumerWidget {
   const ItemInventory({super.key});
@@ -28,7 +29,7 @@ class ItemInventory extends ConsumerWidget {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: Colors.brown,
+            color: AppPalette.inkMuted,
           ),
         ),
         const SizedBox(height: 4),
@@ -82,25 +83,27 @@ class ItemInventory extends ConsumerWidget {
           height: 60,
           decoration: BoxDecoration(
             gradient: item != null
-                ? LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Colors.amber.shade300, Colors.amber.shade700],
+                ? const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [AppPalette.surface, AppPalette.terracottaSoft],
                   )
                 : null,
-            color: item == null ? Colors.white.withValues(alpha: 0.35) : null,
+            color: item == null
+                ? AppPalette.surface.withValues(alpha: 0.55)
+                : null,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isMyTurn && item != null
-                  ? Colors.white
-                  : Colors.brown.shade200,
+                  ? AppPalette.terracotta.withValues(alpha: 0.6)
+                  : AppPalette.line,
               width: 2,
             ),
             boxShadow: item != null
                 ? [
                     BoxShadow(
                       blurRadius: 8,
-                      color: Colors.amber.withValues(alpha: 0.4),
+                      color: AppPalette.terracotta.withValues(alpha: 0.18),
                       offset: const Offset(0, 2),
                     ),
                   ]

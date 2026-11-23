@@ -1,5 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../../domain/models/team.dart';
+import '../../theme/app_palette.dart';
+import '../game/team_colors.dart';
+
 /// 라벨 + 입력 위젯 한 줄.
 class SettingsRow extends StatelessWidget {
   final String label;
@@ -19,7 +23,7 @@ class SettingsRow extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.brown,
+                color: AppPalette.ink,
               ),
             ),
           ),
@@ -32,9 +36,6 @@ class SettingsRow extends StatelessWidget {
 
 /// 팀 하나의 설정 행: 이름 입력 + 조작자(CPU/플레이어) 선택.
 class TeamSetupRow extends StatelessWidget {
-  static const _colors = [Colors.orange, Colors.green, Colors.red, Colors.blue];
-  static const _colorNames = ['주황', '초록', '빨강', '파랑'];
-
   final int index;
   final TextEditingController nameController;
   final int controllerId;
@@ -55,19 +56,31 @@ class TeamSetupRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SettingsRow(
-      label: '팀 ${String.fromCharCode(65 + index)} (${_colorNames[index]})',
+      label:
+          '팀 ${TeamColor.values[index].letter} (${teamColorNameOf(TeamColor.values[index])})',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextField(
             controller: nameController,
             decoration: InputDecoration(
-              prefixIcon: Icon(Icons.circle, color: _colors[index]),
+              prefixIcon: Icon(
+                Icons.circle,
+                color: teamColorOf(TeamColor.values[index]),
+              ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: AppPalette.surface,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: AppPalette.line),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: AppPalette.line),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: AppPalette.terracotta),
               ),
             ),
             onChanged: onNameChanged,
@@ -102,7 +115,7 @@ class TeamSetupRow extends StatelessWidget {
   }
 }
 
-/// 규칙 on/off 스위치 (갈색 테마).
+/// 규칙 on/off 스위치 (전역 스위치 테마 사용).
 class RuleSwitchTile extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -121,9 +134,11 @@ class RuleSwitchTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return SwitchListTile(
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(color: AppPalette.inkMuted),
+      ),
       value: value,
-      activeThumbColor: Colors.brown,
       onChanged: onChanged,
     );
   }

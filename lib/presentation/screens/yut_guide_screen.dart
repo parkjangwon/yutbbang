@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../guide/guide_content.dart';
+import '../theme/app_palette.dart';
 
 /// 윷놀이 규칙·조작·아이템 설명 화면. 내용은 [guideSections]에 있다.
 class YutGuideScreen extends StatelessWidget {
@@ -9,11 +10,7 @@ class YutGuideScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('윷놀이 가이드'),
-        backgroundColor: Colors.brown,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: const Text('윷놀이 가이드')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -64,8 +61,8 @@ class _SectionTitle extends StatelessWidget {
         '$emoji  $text',
         style: const TextStyle(
           fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Colors.brown,
+          fontWeight: FontWeight.w800,
+          color: AppPalette.ink,
         ),
       ),
     );
@@ -120,7 +117,10 @@ class _YutOutcomeTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const header = TextStyle(fontWeight: FontWeight.bold, color: Colors.white);
+    const header = TextStyle(
+      fontWeight: FontWeight.w800,
+      color: AppPalette.terracotta,
+    );
     const cell = TextStyle(fontSize: 14);
 
     TableRow row(List<String> values, {TextStyle style = cell, Color? color}) {
@@ -136,11 +136,15 @@ class _YutOutcomeTable extends StatelessWidget {
       );
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppPalette.line),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Table(
-        border: TableBorder.symmetric(
-          inside: BorderSide(color: Colors.brown.shade100),
+        border: const TableBorder.symmetric(
+          inside: BorderSide(color: AppPalette.line),
         ),
         columnWidths: const {
           0: FlexColumnWidth(1),
@@ -152,7 +156,7 @@ class _YutOutcomeTable extends StatelessWidget {
           row(
             const ['결과', '윷가락', '이동', '확률'],
             style: header,
-            color: Colors.brown,
+            color: AppPalette.terracottaSoft,
           ),
           for (final (i, r) in yutOutcomeRows.indexed)
             row([
@@ -160,7 +164,7 @@ class _YutOutcomeTable extends StatelessWidget {
               r.sticks,
               r.move,
               r.chance,
-            ], color: i.isEven ? Colors.brown.shade50 : Colors.white),
+            ], color: i.isEven ? AppPalette.surface : AppPalette.surfaceSunken),
         ],
       ),
     );

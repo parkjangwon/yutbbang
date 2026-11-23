@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/game_provider.dart';
+import '../theme/app_palette.dart';
 
 class MoonwalkDirectionDialog extends ConsumerWidget {
   final int malId;
@@ -11,17 +12,8 @@ class MoonwalkDirectionDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
+      child: Padding(
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.purple.shade50, Colors.purple.shade100],
-          ),
-        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -29,14 +21,14 @@ class MoonwalkDirectionDialog extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text('↩️', style: TextStyle(fontSize: 48)),
+                const Text('↩️', style: TextStyle(fontSize: 36)),
                 const SizedBox(width: 12),
                 const Text(
                   '뒷걸음질',
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.purple,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppPalette.ink,
                   ),
                 ),
               ],
@@ -45,10 +37,11 @@ class MoonwalkDirectionDialog extends ConsumerWidget {
 
             // 안내 메시지
             Container(
-              padding: const EdgeInsets.all(12),
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.purple.shade100,
-                borderRadius: BorderRadius.circular(8),
+                color: AppPalette.surfaceSunken,
+                borderRadius: BorderRadius.circular(16),
               ),
               child: const Text(
                 '뒷걸음질 아이템이 있습니다.\n뒤로 가시겠습니까?',
@@ -56,7 +49,7 @@ class MoonwalkDirectionDialog extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.purple,
+                  color: AppPalette.ink,
                 ),
               ),
             ),
@@ -68,12 +61,10 @@ class MoonwalkDirectionDialog extends ConsumerWidget {
                 Expanded(
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade600,
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppPalette.surface,
+                      foregroundColor: AppPalette.ink,
+                      side: const BorderSide(color: AppPalette.line),
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
                     ),
                     onPressed: () {
                       _selectDirection(ref, malId, forward: true);
@@ -93,12 +84,7 @@ class MoonwalkDirectionDialog extends ConsumerWidget {
                 Expanded(
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange.shade600,
-                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
                     ),
                     onPressed: () {
                       _selectDirection(ref, malId, forward: false);

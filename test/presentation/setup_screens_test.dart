@@ -75,6 +75,14 @@ void main() {
       ], everyElement(isTrue));
     });
 
+    testWidgets('4팀이면 팀 색 이름이 실제 색과 맞게 표시된다', (tester) async {
+      await pumpScreen(tester, const GameSetupScreen());
+      await tester.tap(find.text('4팀'));
+      await tester.pump();
+      expect(find.text('팀 C (자주)'), findsOneWidget);
+      expect(find.text('팀 D (파랑)'), findsOneWidget);
+    });
+
     testWidgets('컨트롤 모드를 켜면 낙 확률 칩 표기가 바뀐다', (tester) async {
       await pumpScreen(tester, const GameSetupScreen());
       expect(find.text('보통 (15%)'), findsOneWidget);

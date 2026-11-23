@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../providers/game_state.dart';
 import '../../providers/game_view.dart';
 import '../../../domain/models/team.dart';
+import '../../theme/app_palette.dart';
 import 'team_colors.dart';
 
 /// 현재 차례 팀 표시 (팀 색상 pill).
@@ -13,57 +14,49 @@ class TurnIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isMyTurn = team.isHuman;
-
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0.8, end: 1.0),
-      duration: const Duration(seconds: 1),
-      curve: Curves.easeInOut,
-      builder: (context, value, child) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          decoration: BoxDecoration(
-            color: teamColorOf(team.color),
-            borderRadius: BorderRadius.circular(25),
-            boxShadow: [
-              BoxShadow(
-                blurRadius: isMyTurn ? 15 * value : 10,
-                color: isMyTurn
-                    ? teamColorOf(team.color).withValues(alpha: 0.6 * value)
-                    : Colors.black26,
-                offset: const Offset(0, 4),
-                spreadRadius: isMyTurn ? 2 * value : 0,
-              ),
-            ],
-            border: isMyTurn ? Border.all(color: Colors.white, width: 2) : null,
+    final color = teamColorOf(team.color);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 400),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.35),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
-          child: child,
-        );
-      },
-      onEnd: () {}, // Repeat logic could be added here if needed, but build will re-trigger
+        ],
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             team.isHuman ? Icons.person : Icons.memory,
             color: Colors.white,
-            size: 22,
+            size: 20,
           ),
-          const SizedBox(width: 10),
+          Container(
+            width: 1,
+            height: 16,
+            margin: const EdgeInsets.symmetric(horizontal: 10),
+            color: Colors.white.withValues(alpha: 0.5),
+          ),
           Text(
             team.name,
             style: const TextStyle(
               color: Colors.white,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
               fontSize: 18,
             ),
           ),
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
               team.controllerId == 0 ? 'CPU' : 'P${team.controllerId}',
@@ -92,13 +85,13 @@ class NakIndicator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.brown.shade200,
+        color: AppPalette.sageSoft,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         nakLabel,
         style: const TextStyle(
-          color: Colors.brown,
+          color: AppPalette.ink,
           fontWeight: FontWeight.bold,
           fontSize: 13,
         ),

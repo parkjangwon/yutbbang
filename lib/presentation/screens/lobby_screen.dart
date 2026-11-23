@@ -1,110 +1,156 @@
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../theme/app_palette.dart';
+import '../widgets/app_background.dart';
+import 'game_setup_screen.dart';
 import 'settings_screen.dart';
 import 'yut_guide_screen.dart';
-import 'game_setup_screen.dart';
 
 class LobbyScreen extends ConsumerWidget {
   const LobbyScreen({super.key});
 
+  void _open(BuildContext context, Widget screen) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF8B4513), Color(0xFFD2691E)],
-          ),
-        ),
+      body: AppBackground(
         child: SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Spacer(),
-              const Text(
-                '윷 빵',
-                style: TextStyle(
-                  fontSize: 80,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  shadows: [Shadow(blurRadius: 10, color: Colors.black)],
-                ),
-              ),
-              const SizedBox(height: 10),
-              const SizedBox(height: 40),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const GameSetupScreen(),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 50,
-                    vertical: 20,
-                  ),
-                  backgroundColor: Colors.amber,
-                  foregroundColor: Colors.brown,
-                  textStyle: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                child: const Text('게임 시작'),
-              ),
-              const SizedBox(height: 20),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const SettingsScreen(),
-                    ),
-                  );
-                },
-                child: const Text(
-                  '기본 설정',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const YutGuideScreen()),
-                ),
-                child: const Text(
-                  '게임 방법',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-              ),
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 20),
-                child: FutureBuilder<PackageInfo>(
-                  future: PackageInfo.fromPlatform(),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      return Text(
-                        'v${snapshot.data!.version}',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w300,
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _Wordmark(),
+                    const SizedBox(height: 48),
+                    ElevatedButton(
+                      onPressed: () => _open(context, const GameSetupScreen()),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        textStyle: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
                         ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
+                      ),
+                      child: const Text('게임 시작'),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _SecondaryButton(
+                            label: '기본 설정',
+                            icon: Icons.tune,
+                            onPressed: () =>
+                                _open(context, const SettingsScreen()),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _SecondaryButton(
+                            label: '게임 방법',
+                            icon: Icons.menu_book_outlined,
+                            onPressed: () =>
+                                _open(context, const YutGuideScreen()),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 40),
+                    FutureBuilder<PackageInfo>(
+                      future: PackageInfo.fromPlatform(),
+                      builder: (context, snapshot) => Text(
+                        snapshot.hasData ? 'v${snapshot.data!.version}' : '',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: AppPalette.inkMuted,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// '윷빵' 글자 + 양옆 가는 선 + 윷가락 4개 장식.
+class _Wordmark extends StatelessWidget {
+  const _Wordmark();
+
+  @override
+  Widget build(BuildContext context) {
+    Widget rule() =>
+        Expanded(child: Container(height: 1.5, color: AppPalette.boardLine));
+    return Column(
+      children: [
+        Row(
+          children: [
+            rule(),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                '윷빵',
+                style: TextStyle(
+                  fontSize: 64,
+                  fontWeight: FontWeight.w900,
+                  color: AppPalette.ink,
+                  letterSpacing: 2,
+                ),
+              ),
+            ),
+            rule(),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '전통 윷놀이 한 판',
+          style: TextStyle(fontSize: 15, color: AppPalette.inkMuted),
+        ),
+      ],
+    );
+  }
+}
+
+class _SecondaryButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _SecondaryButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+      style: TextButton.styleFrom(
+        foregroundColor: AppPalette.ink,
+        backgroundColor: AppPalette.surface,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppPalette.line),
+        ),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
       ),
     );
   }

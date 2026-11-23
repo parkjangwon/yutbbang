@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/game_provider.dart';
 import '../providers/game_state.dart';
+import '../theme/app_palette.dart';
 
 class InteractiveThrowButton extends ConsumerWidget {
   const InteractiveThrowButton({super.key});
@@ -43,34 +44,14 @@ class InteractiveThrowButton extends ConsumerWidget {
             height: state.isGaugeRunning ? 85 : 75,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  state.isGaugeRunning
-                      ? Colors.orange.shade300
-                      : Colors.orange.shade400,
-                  state.isGaugeRunning
-                      ? Colors.orange.shade700
-                      : Colors.orange.shade800,
-                ],
-              ),
+              color: AppPalette.throwButton,
               boxShadow: [
                 BoxShadow(
-                  blurRadius: state.isGaugeRunning ? 30 : 15,
-                  spreadRadius: state.isGaugeRunning ? 8 : 0,
-                  color: Colors.orange.withValues(
-                    alpha: state.isGaugeRunning ? 0.7 : 0.4,
-                  ),
-                  offset: Offset(0, state.isGaugeRunning ? 6 : 4),
+                  color: AppPalette.throwButton.withValues(alpha: 0.35),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
               ],
-              border: Border.all(
-                color: Colors.white.withValues(
-                  alpha: state.isGaugeRunning ? 0.9 : 0.4,
-                ),
-                width: state.isGaugeRunning ? 4 : 2,
-              ),
             ),
             child: Center(
               child: Column(
@@ -85,7 +66,7 @@ class InteractiveThrowButton extends ConsumerWidget {
                     isGaugeMode ? '누르고 있기' : '던지기',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      color: Colors.white70,
+                      color: Colors.white,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),

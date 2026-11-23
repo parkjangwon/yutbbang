@@ -15,8 +15,9 @@ class YutGame extends FlameGame {
 
   YutGame(this.ref);
 
+  /// 배경은 Flutter 쪽 이미지가 그리므로 투명하게 둔다.
   @override
-  Color backgroundColor() => const Color(0xFFF3E5AB);
+  Color backgroundColor() => const Color(0x00000000);
 
   @override
   Future<void> onLoad() async {

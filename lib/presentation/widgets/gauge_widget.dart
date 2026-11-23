@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../providers/game_state.dart';
+import '../theme/app_palette.dart';
 
 class YutGaugeWidget extends StatelessWidget {
   final double value;
@@ -22,16 +23,10 @@ class YutGaugeWidget extends StatelessWidget {
       width: 280,
       height: 40,
       decoration: BoxDecoration(
-        color: Colors.grey.shade900.withValues(alpha: 0.9),
+        color: AppPalette.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white24, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(color: AppPalette.line),
+        boxShadow: AppPalette.cardShadow,
       ),
       child: Stack(
         alignment: Alignment.centerLeft,
@@ -42,7 +37,7 @@ class YutGaugeWidget extends StatelessWidget {
             child: Container(
               height: 12,
               decoration: BoxDecoration(
-                color: Colors.white10,
+                color: AppPalette.surfaceSunken,
                 borderRadius: BorderRadius.circular(6),
               ),
             ),
@@ -56,13 +51,8 @@ class YutGaugeWidget extends StatelessWidget {
               height: 16,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.redAccent.withValues(alpha: 0.9),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.redAccent.withValues(alpha: 0.6),
-                      blurRadius: 8,
-                    ),
-                  ],
+                  color: AppPalette.danger.withValues(alpha: 0.75),
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
             ),
@@ -75,13 +65,13 @@ class YutGaugeWidget extends StatelessWidget {
               width: 6,
               height: 32,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppPalette.ink,
                 borderRadius: BorderRadius.circular(3),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.blue.withValues(alpha: 0.8),
-                    blurRadius: 12,
-                    spreadRadius: 2,
+                    color: AppPalette.highlight.withValues(alpha: 0.6),
+                    blurRadius: 8,
+                    spreadRadius: 1,
                   ),
                 ],
               ),
@@ -95,7 +85,7 @@ class YutGaugeWidget extends StatelessWidget {
             child: Text(
               'CONTROL GAUGE',
               style: TextStyle(
-                color: Colors.white54,
+                color: AppPalette.inkMuted,
                 fontSize: 7,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
