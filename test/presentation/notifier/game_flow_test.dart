@@ -9,7 +9,7 @@ import 'package:yutbbang/domain/models/yut_result.dart';
 import 'package:yutbbang/presentation/providers/game_provider.dart';
 import 'package:yutbbang/presentation/providers/game_state.dart';
 
-import '../helpers/fixtures.dart';
+import '../../helpers/fixtures.dart';
 
 /// 사람 2팀, 말 2개, 랜덤 낙 없음.
 const twoHumans = GameRuleConfig(teamControllers: [1, 2], nakChancePercent: 0);

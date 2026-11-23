@@ -29,7 +29,7 @@ flutter run -d macos   # macOS 데스크톱
 ### 테스트·정적 분석
 
 ```bash
-flutter test      # 단위·위젯 테스트 104개
+flutter test      # 단위·위젯 테스트 187개
 flutter analyze
 ```
 
@@ -141,8 +141,8 @@ lib/
 test/
 ├── domain/                           순수 로직 단위 테스트
 ├── data/                             설정 저장 테스트
-├── presentation/                     GameNotifier 통합 테스트, 가이드 위젯 테스트
-└── helpers/fixtures.dart             팀 생성·FakeRandom 헬퍼
+├── presentation/                     notifier/ 흐름 테스트, 화면·위젯 테스트
+└── helpers/                          팀 생성·FakeRandom·fakeGame·GameScene
 ```
 
 ### 설계 메모

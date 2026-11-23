@@ -30,7 +30,7 @@ flutter build web          # 로컬엔 Xcode가 없어 macOS 빌드 불가 → �
 |---|---|---|---|
 | 게임 규칙 | `lib/domain/` | Flutter import 금지, 순수 함수(상태를 받아 새 상태 반환) | `test/domain/` |
 | 저장소 | `lib/data/` | | `test/data/` |
-| 상태 머신 | `lib/presentation/providers/` | `GameNotifier`는 순서 제어(타이머·CPU 예약)만. 규칙 계산은 domain에 둔다 | `test/presentation/game_notifier*_test.dart` |
+| 상태 머신 | `lib/presentation/providers/` | `GameNotifier`는 순서 제어(타이머·CPU 예약)만. 규칙 계산은 domain에 둔다 | `test/presentation/notifier/` |
 | 화면 파생 값 | `lib/presentation/providers/game_view.dart` | 위젯 안의 조건식(`if (state.status == ... && isHuman)`)은 여기에 extension 게터로 둔다 | `test/presentation/game_view_test.dart` |
 | 위젯·화면 | `lib/presentation/` | 로직 없이 `GameStateView`와 notifier 호출만 | 위젯 테스트 |
 | Flame | `lib/game/` | 좌표 계산은 `BoardLayout`(순수) | `test/game/` |
@@ -42,9 +42,9 @@ flutter build web          # 로컬엔 Xcode가 없어 macOS 빌드 불가 → �
   - `FakeRandom`: 정해진 난수 순서를 돌려준다.
 - `fake_game_notifier.dart`
   - `fakeGame(state)`: 위젯 테스트용. 상태를 주입하고 `emit()`으로 바꾸며, UI가 부른 액션을 `calls`에 기록한다.
-- 실제 `GameNotifier` 흐름 테스트는 `SeedableGameNotifier`로 장면을 심는다(`game_notifier_flows_test.dart` 참고).
+- `game_scene.dart`
+  - `GameScene.start(tester, teams, ...)`: 실제 `GameNotifier`를 원하는 장면에서 시작한다. 끝에 `scene.finish(tester)`.
   - 타이머는 `testWidgets`의 fake async로 `tester.pump(Duration)` 해서 진행한다.
-  - 테스트 정리는 `container.dispose()`를 먼저 한 뒤 pump 한다.
 - 게임 결과에 영향을 주는 난수는 `gameRandomProvider`로만 얻는다(테스트에서 override). 화면 연출용 난수는 예외.
 
 ## 기타
