@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../providers/game_state.dart';
+import '../../providers/game_view.dart';
 
 /// 상단 바 가운데의 결과/안내 텍스트 (두 줄).
 class GameStatusText extends StatelessWidget {
@@ -10,31 +11,10 @@ class GameStatusText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final showResult =
-        state.lastResult != null && state.status != GameStatus.moving;
-    final showGuide =
-        state.status == GameStatus.selectingMal ||
-        state.status == GameStatus.awaitingShortcutDecision;
-
-    if (!showResult && !showGuide) return const SizedBox.shrink();
-
-    String? resultText;
-    String? guideText;
-
-    if (showResult) {
-      final resultLabels = state.currentThrows.map((e) => e.label).toList();
-      if (state.lastResult != null &&
-          !state.currentThrows.contains(state.lastResult)) {
-        resultLabels.add(state.lastResult!.label);
-      }
-      resultText = '결과: ${resultLabels.join(', ')}';
-    }
-
-    if (showGuide) {
-      guideText = state.status == GameStatus.awaitingShortcutDecision
-          ? '지름길을 선택하세요'
-          : '움직일 말을 선택하세요';
-    }
+    final (:result, :guide) = state.statusLines;
+    if (result == null && guide == null) return const SizedBox.shrink();
+    final resultText = result;
+    final guideText = guide;
 
     return Column(
       mainAxisSize: MainAxisSize.min,

@@ -55,7 +55,10 @@ void main() {
       final tiles = ItemTileGenerator.generate(Random(3));
       for (final id in tiles) {
         final n = BoardGraph.nodes[id]!;
-        expect([n.nextId, n.prevId, n.shortcutNextId].any(tiles.contains), isFalse);
+        expect(
+          [n.nextId, n.prevId, n.shortcutNextId].any(tiles.contains),
+          isFalse,
+        );
       }
     });
   });

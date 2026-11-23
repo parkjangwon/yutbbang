@@ -93,10 +93,11 @@ void main() {
     });
 
     test('뒷걸음질(isReverse)은 결과 칸 수만큼 기록을 거슬러 간다', () {
-      expect(
-        path(5, YutResult.geol, history: [1, 2, 3, 4], reverse: true),
-        [4, 3, 2],
-      );
+      expect(path(5, YutResult.geol, history: [1, 2, 3, 4], reverse: true), [
+        4,
+        3,
+        2,
+      ]);
     });
 
     test('기록이 없으면 이전 칸(prevId)으로 간다', () {

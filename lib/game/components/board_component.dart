@@ -1,13 +1,14 @@
 import 'package:flame/components.dart';
+import 'package:flame/extensions.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../domain/logic/board_graph.dart';
+import '../board_layout.dart';
 import '../yut_game.dart';
 import '../../presentation/providers/game_provider.dart';
 
 class BoardComponent extends PositionComponent with HasGameReference {
-  static const double nodePaddingRatio =
-      0.1; // Use ratio instead of fixed pixels for consistency
+  BoardLayout get layout => BoardLayout(game.size.toSize());
 
   @override
   Future<void> onLoad() async {
@@ -21,26 +22,14 @@ class BoardComponent extends PositionComponent with HasGameReference {
   }
 
   void _updateLayout() {
-    final gameSize = game.size;
-    final minDim = gameSize.x < gameSize.y ? gameSize.x : gameSize.y;
-    final boardDimension = minDim * 0.85;
-
-    size = Vector2.all(boardDimension);
-    position = (gameSize - size) / 2;
-  }
-
-  // Very specific positioning logic
-  Vector2 getRelativeNodePos(double nx, double ny) {
-    final padding = size.x * nodePaddingRatio;
-    final availableSize = size.x - 2 * padding;
-
-    final x = padding + nx * availableSize;
-    final y = padding + ny * availableSize;
-    return Vector2(x, y);
+    final current = layout;
+    size = Vector2.all(current.boardSide);
+    position = current.boardOrigin.toVector2();
   }
 
   @override
   void render(Canvas canvas) {
+    final layout = this.layout;
     final rect = size.toRect();
 
     // Board Border & Background
@@ -61,12 +50,12 @@ class BoardComponent extends PositionComponent with HasGameReference {
       ..color = Colors.brown.shade100
       ..strokeWidth = 3;
     for (final node in BoardGraph.nodes.values) {
-      final start = getRelativeNodePos(node.x, node.y).toOffset();
+      final start = layout.nodeOffset(node.x, node.y);
       void drawTo(int? targetId) {
         if (targetId == null) return;
         final nextNode = BoardGraph.nodes[targetId];
         if (nextNode != null) {
-          final end = getRelativeNodePos(nextNode.x, nextNode.y).toOffset();
+          final end = layout.nodeOffset(nextNode.x, nextNode.y);
           canvas.drawLine(start, end, linePaint);
         }
       }
@@ -84,19 +73,19 @@ class BoardComponent extends PositionComponent with HasGameReference {
     final specialPaint = Paint()..color = const Color(0xFFFFF4E0);
 
     for (final node in BoardGraph.nodes.values) {
-      final pos = getRelativeNodePos(node.x, node.y).toOffset();
-      final isBig = [0, 5, 10, 15, 20].contains(node.id);
-      final radius = isBig ? (size.x * 0.05) : (size.x * 0.035);
+      final pos = layout.nodeOffset(node.x, node.y);
+      final radius = layout.nodeRadius(node.id);
+      final isMajor = BoardLayout.isMajorNode(node.id);
 
-      canvas.drawCircle(pos, radius, isBig ? specialPaint : nodePaint);
+      canvas.drawCircle(pos, radius, isMajor ? specialPaint : nodePaint);
       canvas.drawCircle(pos, radius, nodeBorderPaint);
     }
 
     // 아이템 타일 표시 (황금색)
-    _renderItemTiles(canvas);
+    _renderItemTiles(canvas, layout);
   }
 
-  void _renderItemTiles(Canvas canvas) {
+  void _renderItemTiles(Canvas canvas, BoardLayout layout) {
     // YutGame에서 게임 상태 가져오기
     if (game is! YutGame) return;
 
@@ -108,12 +97,9 @@ class BoardComponent extends PositionComponent with HasGameReference {
 
       // 아이템 타일 렌더링
       for (final nodeId in gameState.itemTiles) {
-        final node = BoardGraph.nodes[nodeId];
-        if (node == null) continue;
-
-        final pos = getRelativeNodePos(node.x, node.y).toOffset();
-        final isBig = [0, 5, 10, 15, 20].contains(node.id);
-        final radius = isBig ? (size.x * 0.05) : (size.x * 0.035);
+        final pos = layout.nodeOffsetById(nodeId);
+        if (pos == null) continue;
+        final radius = layout.nodeRadius(nodeId);
 
         // 황금색 외곽 글로우
         final glowPaint = Paint()

@@ -1,14 +1,14 @@
 import 'package:flame/components.dart';
+import 'package:flame/extensions.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/events.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/team.dart';
-import '../../domain/logic/board_graph.dart';
 import '../../domain/logic/path_finder.dart';
 import '../../presentation/providers/game_provider.dart';
-import '../../presentation/providers/game_state.dart';
+import '../../presentation/providers/game_view.dart';
 import 'board_component.dart';
 import 'mal_renderer.dart';
 
@@ -87,10 +87,8 @@ class MalComponent extends PositionComponent
         } else if (nodeId == PathFinder.startNodeId) {
           _moveQueue.add(_getHomePosition());
         } else {
-          final node = BoardGraph.nodes[nodeId];
-          if (node != null) {
-            _moveQueue.add(board.getRelativeNodePos(node.x, node.y));
-          }
+          final pos = board.layout.nodeOffsetById(nodeId);
+          if (pos != null) _moveQueue.add(pos.toVector2());
         }
       }
       mal = newMal;
@@ -121,26 +119,17 @@ class MalComponent extends PositionComponent
     }
   }
 
+  /// 대기·완주 말의 판 밖 위치(하단 대기 패널 쪽).
   Vector2 _getHomePosition() {
-    if (parent == null || parent is! BoardComponent) return Vector2.zero();
+    if (parent is! BoardComponent) return Vector2.zero();
     final board = parent as BoardComponent;
-    final gameSize = game.size;
-
-    final state = ref.read(gameProvider);
-    final teamIndex = state.teams.indexWhere((t) => t.color == mal.color);
-    final totalTeams = state.teams.length;
-
-    // 하단 대기 위젯의 위치에 맞게 X 좌표 계산 (Row의 spaceEvenly와 유사하게)
-    final sectionWidth = gameSize.x / (totalTeams > 0 ? totalTeams : 4);
-    final screenX = sectionWidth * (teamIndex + 0.5);
-
-    // Y 좌표는 보드 아래쪽 (화면 밖에서 날아오는 느낌)
-    final screenY = gameSize.y + 300;
-
-    // Board는 (gameSize - board.size) / 2 에 위치함. 이를 상대 좌표로 변환
-    final boardOrigin = (gameSize - board.size) / 2;
-
-    return Vector2(screenX - boardOrigin.x, screenY - boardOrigin.y);
+    final teams = ref.read(gameProvider).teams;
+    return board.layout
+        .homeOffset(
+          teamIndex: teams.indexWhere((t) => t.color == mal.color),
+          teamCount: teams.length,
+        )
+        .toVector2();
   }
 
   void _syncPosition({bool immediate = false}) {
@@ -148,19 +137,15 @@ class MalComponent extends PositionComponent
     final board = parent as BoardComponent;
     if (board.size.x < 100) return;
 
-    Vector2 targetPos;
-    if (mal.isFinished) {
-      targetPos = _getHomePosition();
-    } else if (mal.currentNodeId == null) {
-      // 시작점: 하단 영역에서 온 것으로 처리
+    final nodeId = mal.currentNodeId;
+    final Vector2 targetPos;
+    if (nodeId == null) {
+      // 대기·완주: 하단 대기 영역
       targetPos = _getHomePosition();
     } else {
-      final node = BoardGraph.nodes[mal.currentNodeId!];
-      if (node != null) {
-        targetPos = board.getRelativeNodePos(node.x, node.y);
-      } else {
-        return;
-      }
+      final pos = board.layout.nodeOffsetById(nodeId);
+      if (pos == null) return;
+      targetPos = pos.toVector2();
     }
 
     if (immediate) {
@@ -234,34 +219,22 @@ class MalComponent extends PositionComponent
 
     MalRenderer.paintCoin(canvas, center, radius, mal.color, stackCount);
 
-    final state = ref.read(gameProvider);
-    // Pulse effect if this piece belongs to the current team and we're picking
-    if (state.currentTeam.color == mal.color &&
-        (state.status == GameStatus.selectingMal ||
-            state.status == GameStatus.awaitingShortcutDecision) &&
-        state.currentTeam.isHuman) {
+    if (ref.read(gameProvider).isMalHighlighted(mal)) {
       MalRenderer.paintSelectionPulse(canvas, center, radius);
     }
   }
 
   @override
   void onTapDown(TapDownEvent event) {
-    if (mal.isFinished || _isMoving) return;
-    final state = ref.read(gameProvider);
-
-    // 아이템 대상 선택 중인지 확인
-    if (state.status == GameStatus.awaitingBanishTarget ||
-        state.status == GameStatus.awaitingSwapSource ||
-        state.status == GameStatus.awaitingSwapTarget) {
-      ref.read(gameProvider.notifier).handleMalSelectionForItem(mal.id);
-      return;
-    }
-
-    if ((state.status == GameStatus.selectingMal ||
-            state.status == GameStatus.awaitingShortcutDecision) &&
-        state.currentTeam.color == mal.color &&
-        state.currentTeam.isHuman) {
-      ref.read(gameProvider.notifier).selectMal(mal.id);
+    if (_isMoving) return;
+    final notifier = ref.read(gameProvider.notifier);
+    switch (ref.read(gameProvider).malTapAction(mal)) {
+      case MalTapAction.itemTarget:
+        notifier.handleMalSelectionForItem(mal.id);
+      case MalTapAction.select:
+        notifier.selectMal(mal.id);
+      case MalTapAction.none:
+        break;
     }
   }
 }

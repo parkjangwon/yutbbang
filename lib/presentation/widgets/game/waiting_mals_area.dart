@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/models/team.dart';
 import '../../providers/game_provider.dart';
 import '../../providers/game_state.dart';
+import '../../providers/game_view.dart';
 import 'team_colors.dart';
 
 /// 하단 대기 말 영역 (팀별 패널).
@@ -43,14 +44,10 @@ class WaitingMalsArea extends ConsumerWidget {
             );
           }
 
-          final waitingMals = team.mals
-              .where((m) => m.currentNodeId == null && !m.isFinished)
-              .toList();
+          final waitingMals = team.mals.where((m) => m.isWaiting).toList();
           if (waitingMals.isEmpty) return const SizedBox.shrink();
 
-          final isSelectable =
-              state.status == GameStatus.selectingMal &&
-              team.color == state.currentTeam.color;
+          final isSelectable = state.canSelectWaitingMals(team);
 
           return GestureDetector(
             onTap: () {

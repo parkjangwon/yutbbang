@@ -31,17 +31,32 @@ void main() {
     await repo.save(saved);
     final c = await repo.load(() => const GameRuleConfig());
     expect(
-      [c.aiDifficulty, c.nakChancePercent, c.useBackDo, c.useGaugeControl,
-       c.backDoFlying, c.autoCarrier, c.totalNak, c.roastedChestnutMode, c.useItemMode],
+      [
+        c.aiDifficulty,
+        c.nakChancePercent,
+        c.useBackDo,
+        c.useGaugeControl,
+        c.backDoFlying,
+        c.autoCarrier,
+        c.totalNak,
+        c.roastedChestnutMode,
+        c.useItemMode,
+      ],
       [9, 25, false, true, true, true, true, true, true],
     );
   });
 
-  test('판마다 정하는 값(팀 수·말 수)은 저장하지 않는다', () async {
+  test('판마다 정하는 값(팀 수)은 저장하지 않는다', () async {
     SharedPreferences.setMockInitialValues({});
-    await repo.save(const GameRuleConfig(teamCount: 4, malCount: 4));
+    await repo.save(const GameRuleConfig(teamCount: 4));
     final c = await repo.load(() => const GameRuleConfig(teamCount: 3));
     expect(c.teamCount, 3);
-    expect(c.malCount, 2);
+  });
+
+  test('설정 화면의 "게임당 말" 기본값은 저장된다 (회귀)', () async {
+    SharedPreferences.setMockInitialValues({});
+    await repo.save(const GameRuleConfig(malCount: 4));
+    final c = await repo.load(() => const GameRuleConfig());
+    expect(c.malCount, 4);
   });
 }

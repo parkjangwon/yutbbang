@@ -33,6 +33,37 @@ class GameRuleConfig {
     this.teamControllers = const [1, 0, 0, 0],
   });
 
+  /// [teamIndex] 팀의 조작자를 바꾼다(0 = CPU, 1~4 = 플레이어 번호).
+  /// 한 플레이어는 한 팀만 맡으므로, 같은 번호를 쓰던 다른 팀은 CPU가 된다.
+  GameRuleConfig withController(int teamIndex, int controllerId) {
+    final next = List<int>.from(teamControllers);
+    if (controllerId > 0) {
+      for (int i = 0; i < next.length; i++) {
+        if (next[i] == controllerId) next[i] = 0;
+      }
+    }
+    next[teamIndex] = controllerId;
+    return copyWith(teamControllers: _normalized(next, teamCount));
+  }
+
+  /// 참여 팀 수를 바꾼다. 빠지는 팀의 조작자는 CPU로 초기화한다.
+  GameRuleConfig withTeamCount(int count) => copyWith(
+    teamCount: count,
+    teamControllers: _normalized(teamControllers, count),
+  );
+
+  /// 참여하지 않는 팀은 CPU로, 중복된 플레이어 번호는 뒤쪽 팀을 CPU로.
+  static List<int> _normalized(List<int> controllers, int teamCount) {
+    final used = <int>{};
+    return [
+      for (int i = 0; i < controllers.length; i++)
+        if (i >= teamCount || (controllers[i] > 0 && !used.add(controllers[i])))
+          0
+        else
+          controllers[i],
+    ];
+  }
+
   GameRuleConfig copyWith({
     bool? useBackDo,
     bool? nakPenaltyTurnEnd,

@@ -70,7 +70,7 @@ class ForfeitButton extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('기권 확인'),
         content: Text(
-          '${state.currentTeam.name} 팀이 기권하시겠습니까?\n모든 말이 완주 처리되어 게임에서 제외됩니다.',
+          '${state.currentTeam.name} 팀이 기권하시겠습니까?\n모든 말이 판에서 사라지고 게임에서 제외됩니다.',
         ),
         actions: [
           TextButton(
@@ -80,8 +80,7 @@ class ForfeitButton extends ConsumerWidget {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              final teamIndex = state.turnIndex % state.teams.length;
-              ref.read(gameProvider.notifier).forfeit(teamIndex);
+              ref.read(gameProvider.notifier).forfeit(state.currentTeamIndex);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('기권'),

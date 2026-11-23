@@ -40,7 +40,11 @@ Mal malOf(List<Team> teams, int malId) =>
 
 /// 정해진 값을 돌려주는 Random. 값이 떨어지면 마지막 값을 반복한다.
 class FakeRandom implements Random {
-  FakeRandom({this.doubles = const [0.0], this.bools = const [false], this.ints = const [0]});
+  FakeRandom({
+    this.doubles = const [0.0],
+    this.bools = const [false],
+    this.ints = const [0],
+  });
 
   final List<double> doubles;
   final List<bool> bools;

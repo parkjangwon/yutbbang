@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../presentation/providers/game_provider.dart';
 import '../presentation/providers/game_state.dart';
+import '../presentation/providers/game_view.dart';
 import 'components/board_component.dart';
 import 'components/mal_component.dart';
 import 'components/yut_display_component.dart';
@@ -40,12 +41,7 @@ class YutGame extends FlameGame {
           gameState.lastStickStates,
           gameState.lastResult,
         );
-        yutDisplay.opacity =
-            (gameState.status == GameStatus.throwing ||
-                gameState.status == GameStatus.selectingMal ||
-                gameState.status == GameStatus.moving)
-            ? 1.0
-            : 0.0;
+        yutDisplay.opacity = gameState.isYutDisplayVisible ? 1.0 : 0.0;
       }
     } catch (e) {
       // Initial frame safety
@@ -58,18 +54,7 @@ class YutGame extends FlameGame {
 
     for (final team in state.teams) {
       for (final mal in team.mals) {
-        int stackCount = 1;
-        if (mal.currentNodeId != null) {
-          // 판 위에 있는 말들의 스택 카운트
-          stackCount = team.mals
-              .where((m) => m.currentNodeId == mal.currentNodeId)
-              .length;
-        } else if (!mal.isFinished) {
-          // 시작점에 있는 말들의 스택 카운트
-          stackCount = team.mals
-              .where((m) => m.currentNodeId == null && !m.isFinished)
-              .length;
-        }
+        final stackCount = state.stackCountOf(mal);
 
         final existing = board.children
             .whereType<MalComponent>()

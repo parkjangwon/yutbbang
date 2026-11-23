@@ -40,8 +40,9 @@ void main() {
 
   /// 남은 타이머를 모두 흘려보내고 컨테이너를 정리한다.
   Future<void> tearDown0(WidgetTester tester) async {
-    await tester.pump(const Duration(seconds: 10));
+    // CPU 차례가 계속 이어질 수 있으므로 먼저 정리하고, 남은 타이머는 ref.mounted 검사로 무시된다.
     container.dispose();
+    await tester.pump(const Duration(seconds: 10));
   }
 
   testWidgets('처음에는 로비 상태이고 저장된 설정을 불러온다', (tester) async {
@@ -54,7 +55,12 @@ void main() {
   testWidgets('게임 시작: 팀·말 생성, 아이템 모드면 아이템 타일 8개', (tester) async {
     await setUp0(tester);
     notifier().startGameWithConfig(
-      twoHumans.copyWith(teamCount: 3, malCount: 4, teamControllers: [1, 2, 3], useItemMode: true),
+      twoHumans.copyWith(
+        teamCount: 3,
+        malCount: 4,
+        teamControllers: [1, 2, 3],
+        useItemMode: true,
+      ),
     );
     expect(state().status, GameStatus.throwing);
     expect(state().teams, hasLength(3));
@@ -151,7 +157,11 @@ void main() {
   testWidgets('CPU끼리 대결하면 사람 입력 없이 끝까지 진행된다', (tester) async {
     await setUp0(tester, random: Random(2026));
     notifier().startGameWithConfig(
-      const GameRuleConfig(teamControllers: [0, 0], malCount: 2, useItemMode: true),
+      const GameRuleConfig(
+        teamControllers: [0, 0],
+        malCount: 2,
+        useItemMode: true,
+      ),
     );
     for (int i = 0; i < 2000 && state().status != GameStatus.finished; i++) {
       await tester.pump(const Duration(milliseconds: 500));

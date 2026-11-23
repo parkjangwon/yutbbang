@@ -155,10 +155,12 @@ class _YutOutcomeTable extends StatelessWidget {
             color: Colors.brown,
           ),
           for (final (i, r) in yutOutcomeRows.indexed)
-            row(
-              [r.name, r.sticks, r.move, r.chance],
-              color: i.isEven ? Colors.brown.shade50 : Colors.white,
-            ),
+            row([
+              r.name,
+              r.sticks,
+              r.move,
+              r.chance,
+            ], color: i.isEven ? Colors.brown.shade50 : Colors.white),
         ],
       ),
     );

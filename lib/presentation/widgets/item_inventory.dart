@@ -134,60 +134,18 @@ class ItemInventory extends ConsumerWidget {
     );
   }
 
-  void _useItem(BuildContext context, WidgetRef ref, ItemType item) {
-    if (item == ItemType.reroll) {
+  /// 안내가 있으면 먼저 보여주고, 수동 아이템이면 사용한다.
+  void _useItem(BuildContext context, WidgetRef ref, ItemType type) {
+    final item = GameItem.fromType(type);
+    final hint = item.tapHint;
+    if (hint != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🔄 다시 던지기는 윷을 던진 후 자동으로 사용 여부를 물어봅니다.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-    if (item == ItemType.shield) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🛡️ 낙 방지권은 낙이 나왔을 때 자동으로 사용됩니다.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-    if (item == ItemType.moonwalk) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('↩️ 뒷걸음질은 말을 선택할 때 사용할지 자동으로 물어봅니다.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    // 신규 아이템 안내
-    if (item == ItemType.swap) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('↔️ 위치 교환: 내 말과 상대방 말의 위치를 바꿉니다. 먼저 내 말을 선택하세요.'),
-          duration: Duration(seconds: 3),
-        ),
-      );
-    } else if (item == ItemType.banish) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🏠 강제 귀가: 상대방의 말 하나를 지정하여 출발지로 보냅니다.'),
-          duration: Duration(seconds: 3),
-        ),
-      );
-    } else if (item == ItemType.fixedDice) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🌟 황금 윷: 다음 던지기 결과가 윷 또는 모로 고정됩니다!'),
-          duration: Duration(seconds: 2),
-        ),
+        SnackBar(content: Text(hint), duration: const Duration(seconds: 2)),
       );
     }
-
-    ref.read(gameProvider.notifier).useItem(item);
+    if (!item.isAutoTriggered) {
+      ref.read(gameProvider.notifier).useItem(type);
+    }
   }
 
   void _showItemDescription(BuildContext context, ItemType item) {

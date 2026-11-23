@@ -77,10 +77,10 @@ void main() {
 
   group('YutResult', () {
     test('윷·모만 보너스 턴', () {
-      expect(
-        YutResult.values.where((r) => r.isBonusTurn),
-        [YutResult.yut, YutResult.mo],
-      );
+      expect(YutResult.values.where((r) => r.isBonusTurn), [
+        YutResult.yut,
+        YutResult.mo,
+      ]);
     });
 
     test('이동 칸 수', () {

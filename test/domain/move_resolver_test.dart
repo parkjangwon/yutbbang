@@ -57,7 +57,10 @@ void main() {
 
   group('planPath', () {
     test('빽도 날기: 대기 말이 빽도로 바로 골인', () {
-      final teams = [team(0, [null]), team(1, [null])];
+      final teams = [
+        team(0, [null]),
+        team(1, [null]),
+      ];
       final p = MoveResolver.planPath(
         teams: teams,
         team: teams[0],
@@ -69,7 +72,10 @@ void main() {
     });
 
     test('골인 직전 칸(0번)에 상대가 있으면 그 칸에 멈춘다', () {
-      final teams = [team(0, [19]), team(1, [0])];
+      final teams = [
+        team(0, [19]),
+        team(1, [0]),
+      ];
       final p = MoveResolver.planPath(
         teams: teams,
         team: teams[0],
@@ -81,7 +87,10 @@ void main() {
     });
 
     test('골인 직전 칸이 비어 있으면 골인', () {
-      final teams = [team(0, [19]), team(1, [3])];
+      final teams = [
+        team(0, [19]),
+        team(1, [3]),
+      ];
       final p = MoveResolver.planPath(
         teams: teams,
         team: teams[0],
@@ -112,7 +121,15 @@ void main() {
     );
 
     test('출발 말이 이동하면 위치와 기록이 갱신된다', () {
-      final out = move([team(0, [null]), team(1, [null])], 0, [1, 2, 3], YutResult.geol);
+      final out = move(
+        [
+          team(0, [null]),
+          team(1, [null]),
+        ],
+        0,
+        [1, 2, 3],
+        YutResult.geol,
+      );
       final mal = malOf(out.teams, 0);
       expect(mal.currentNodeId, 3);
       expect(mal.historyNodeIds, [1, 2]);
@@ -120,14 +137,30 @@ void main() {
     });
 
     test('같은 칸의 우리 말은 업혀서 함께 이동한다', () {
-      final out = move([team(0, [3, 3, null]), team(1, [null])], 0, [4, 5], YutResult.gae);
+      final out = move(
+        [
+          team(0, [3, 3, null]),
+          team(1, [null]),
+        ],
+        0,
+        [4, 5],
+        YutResult.gae,
+      );
       expect(malOf(out.teams, 0).currentNodeId, 5);
       expect(malOf(out.teams, 1).currentNodeId, 5);
       expect(malOf(out.teams, 2).currentNodeId, isNull);
     });
 
     test('상대 말이 있는 칸에 멈추면 잡는다', () {
-      final out = move([team(0, [2]), team(1, [4, 4])], 0, [3, 4], YutResult.gae);
+      final out = move(
+        [
+          team(0, [2]),
+          team(1, [4, 4]),
+        ],
+        0,
+        [3, 4],
+        YutResult.gae,
+      );
       expect(out.caughtOpponent, isTrue);
       expect(out.caughtHuman, isTrue);
       expect(malOf(out.teams, 10).currentNodeId, isNull);
@@ -136,13 +169,29 @@ void main() {
     });
 
     test('지나치기만 한 칸의 상대 말은 잡지 않는다', () {
-      final out = move([team(0, [2]), team(1, [3])], 0, [3, 4], YutResult.gae);
+      final out = move(
+        [
+          team(0, [2]),
+          team(1, [3]),
+        ],
+        0,
+        [3, 4],
+        YutResult.gae,
+      );
       expect(out.caughtOpponent, isFalse);
       expect(malOf(out.teams, 10).currentNodeId, 3);
     });
 
     test('골인하면 완주 처리된다', () {
-      final out = move([team(0, [19]), team(1, [null])], 0, [0, finish], YutResult.do_);
+      final out = move(
+        [
+          team(0, [19]),
+          team(1, [null]),
+        ],
+        0,
+        [0, finish],
+        YutResult.do_,
+      );
       final mal = malOf(out.teams, 0);
       expect(mal.isFinished, isTrue);
       expect(mal.currentNodeId, isNull);
@@ -163,7 +212,13 @@ void main() {
 
     test('빽도는 이동 기록을 한 칸 지운다', () {
       final teams = [
-        team(0, [3], history: [[1, 2]]),
+        team(
+          0,
+          [3],
+          history: [
+            [1, 2],
+          ],
+        ),
         team(1, [null]),
       ];
       final out = move(teams, 0, [2], YutResult.backDo);
@@ -173,7 +228,10 @@ void main() {
     });
 
     test('자동 임신: 중앙에 도착하면 대기 말 하나가 합류', () {
-      final teams = [team(0, [22, null, null]), team(1, [null])];
+      final teams = [
+        team(0, [22, null, null]),
+        team(1, [null]),
+      ];
       final out = move(teams, 0, [20], YutResult.do_, autoCarrier: true);
       expect(malOf(out.teams, 0).currentNodeId, 20);
       expect(malOf(out.teams, 1).currentNodeId, 20);
@@ -181,7 +239,10 @@ void main() {
     });
 
     test('자동 임신 규칙이 꺼져 있으면 합류하지 않는다', () {
-      final teams = [team(0, [22, null]), team(1, [null])];
+      final teams = [
+        team(0, [22, null]),
+        team(1, [null]),
+      ];
       final out = move(teams, 0, [20], YutResult.do_);
       expect(malOf(out.teams, 1).currentNodeId, isNull);
     });

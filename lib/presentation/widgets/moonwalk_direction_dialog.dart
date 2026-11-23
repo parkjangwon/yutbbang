@@ -122,8 +122,8 @@ class MoonwalkDirectionDialog extends ConsumerWidget {
     );
   }
 
+  /// 뒤로 가기를 고르면 뒷걸음질 아이템을 쓴다.
   void _selectDirection(WidgetRef ref, int malId, {required bool forward}) {
-    // 새로운 자동 발동 로직 사용
-    ref.read(gameProvider.notifier).confirmMoonwalk(!forward ? true : false);
+    ref.read(gameProvider.notifier).confirmMoonwalk(!forward);
   }
 }

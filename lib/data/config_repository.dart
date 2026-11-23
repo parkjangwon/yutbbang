@@ -4,7 +4,7 @@ import '../domain/models/game_rule_config.dart';
 
 /// 글로벌 설정을 기기에 저장·복원한다.
 ///
-/// 팀 수·팀 이름·말 수·CPU/플레이어 배정은 판마다 정하는 값이라 저장하지 않는다.
+/// 팀 수·팀 이름·CPU/플레이어 배정은 판마다 정하는 값이라 저장하지 않는다.
 class ConfigRepository {
   static const _useBackDo = 'useBackDo';
   static const _useGaugeControl = 'useGaugeControl';
@@ -15,6 +15,7 @@ class ConfigRepository {
   static const _useItemMode = 'useItemMode';
   static const _aiDifficulty = 'aiDifficulty';
   static const _nakChancePercent = 'nakChancePercent';
+  static const _malCount = 'malCount';
 
   const ConfigRepository();
 
@@ -32,6 +33,7 @@ class ConfigRepository {
       useItemMode: prefs.getBool(_useItemMode) ?? false,
       aiDifficulty: prefs.getInt(_aiDifficulty) ?? 5,
       nakChancePercent: prefs.getInt(_nakChancePercent) ?? 15,
+      malCount: prefs.getInt(_malCount) ?? 2,
     );
   }
 
@@ -47,6 +49,7 @@ class ConfigRepository {
       prefs.setBool(_useItemMode, config.useItemMode),
       prefs.setInt(_aiDifficulty, config.aiDifficulty),
       prefs.setInt(_nakChancePercent, config.nakChancePercent),
+      prefs.setInt(_malCount, config.malCount),
     ]);
   }
 }
