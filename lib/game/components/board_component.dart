@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flame/components.dart';
 import 'package:flame/extensions.dart';
 import 'package:material_ui/material_ui.dart';
@@ -6,6 +8,8 @@ import '../../domain/logic/board_graph.dart';
 import '../board_layout.dart';
 import '../yut_game.dart';
 import '../../presentation/providers/game_provider.dart';
+import '../../presentation/providers/game_view.dart';
+import 'mal_renderer.dart';
 
 class BoardComponent extends PositionComponent with HasGameReference {
   BoardLayout get layout => BoardLayout(game.size.toSize());
@@ -83,6 +87,55 @@ class BoardComponent extends PositionComponent with HasGameReference {
 
     // 아이템 타일 표시 (황금색)
     _renderItemTiles(canvas, layout);
+    _renderDestinationPreviews(canvas, layout);
+  }
+
+  /// 말을 고르기 전, 움직일 수 있는 말들이 도착할 칸을 팀 색 점선 고리로 표시한다.
+  void _renderDestinationPreviews(Canvas canvas, BoardLayout layout) {
+    if (game is! YutGame) return;
+    final state = (game as YutGame).ref.read(gameProvider);
+    final previews = state.destinationPreviews;
+    if (previews.isEmpty) return;
+
+    final color = MalRenderer.rawColor(state.currentTeam.color);
+    final ring = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+
+    for (final preview in previews) {
+      final pos = layout.nodeOffsetById(preview.nodeId);
+      if (pos == null) continue;
+      final radius = layout.nodeRadius(preview.nodeId) + 6;
+      // 점선 고리(12조각)
+      const segments = 12;
+      for (int i = 0; i < segments; i += 2) {
+        canvas.drawArc(
+          Rect.fromCircle(center: pos, radius: radius),
+          i * 2 * math.pi / segments,
+          2 * math.pi / segments,
+          false,
+          ring,
+        );
+      }
+      if (preview.finishes) {
+        final label = TextPainter(
+          text: TextSpan(
+            text: '골인',
+            style: TextStyle(
+              color: color,
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        label.paint(
+          canvas,
+          pos - Offset(label.width / 2, radius + label.height + 2),
+        );
+      }
+    }
   }
 
   void _renderItemTiles(Canvas canvas, BoardLayout layout) {

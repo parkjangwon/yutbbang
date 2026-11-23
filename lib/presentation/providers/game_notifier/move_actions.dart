@@ -185,6 +185,13 @@ mixin _MoveActions on _GameNotifierBase {
       isReverse: isReverse,
     );
     _setTeams(outcome.teams);
+    final teamName = state.teams[teamIndex].name;
+    if (outcome.finished) _log('$teamName 말 골인!');
+    for (final caught in outcome.caughtTeamIndexes) {
+      _log(
+        '${_GameNotifierBase._subject(teamName)} ${state.teams[caught].name} 말을 잡았습니다',
+      );
+    }
 
     final landing = outcome.landingNodeId;
     if (_rules.useItemMode &&
@@ -211,7 +218,7 @@ mixin _MoveActions on _GameNotifierBase {
     _displayBonusTurn('상대 말을 잡았습니다! 한번 더! 🎯');
     state = state.copyWith(status: GameStatus.throwing);
     if (!_isHumanTurn) {
-      _later(const Duration(milliseconds: 1500), throwYut);
+      _aiLater(1500, throwYut);
     }
   }
 

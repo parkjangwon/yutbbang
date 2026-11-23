@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../../domain/models/game_rule_config.dart';
+import '../../providers/game_state.dart';
+import '../../providers/game_view.dart';
 import '../../../domain/models/team.dart';
 import 'team_colors.dart';
 
@@ -81,27 +82,13 @@ class TurnIndicator extends StatelessWidget {
 
 /// 낙 난이도/확률 표시.
 class NakIndicator extends StatelessWidget {
-  final GameRuleConfig config;
+  final GameState state;
 
-  const NakIndicator({super.key, required this.config});
+  const NakIndicator({super.key, required this.state});
 
   @override
   Widget build(BuildContext context) {
-    String nakLabel;
-    final nakChance = config.nakChancePercent;
-
-    if (config.useGaugeControl) {
-      if (nakChance >= 25) {
-        nakLabel = '낙 : 어려움';
-      } else if (nakChance >= 15) {
-        nakLabel = '낙 : 보통';
-      } else {
-        nakLabel = '낙 : 쉬움';
-      }
-    } else {
-      nakLabel = '낙 $nakChance%';
-    }
-
+    final nakLabel = state.nakBadgeLabel;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -113,7 +100,7 @@ class NakIndicator extends StatelessWidget {
         style: const TextStyle(
           color: Colors.brown,
           fontWeight: FontWeight.bold,
-          fontSize: 12,
+          fontSize: 13,
         ),
       ),
     );

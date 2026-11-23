@@ -16,6 +16,7 @@ class ConfigRepository {
   static const _aiDifficulty = 'aiDifficulty';
   static const _nakChancePercent = 'nakChancePercent';
   static const _malCount = 'malCount';
+  static const _cpuSpeed = 'cpuSpeed';
 
   const ConfigRepository();
 
@@ -34,6 +35,9 @@ class ConfigRepository {
       aiDifficulty: prefs.getInt(_aiDifficulty) ?? 5,
       nakChancePercent: prefs.getInt(_nakChancePercent) ?? 15,
       malCount: prefs.getInt(_malCount) ?? 2,
+      cpuSpeed: CpuSpeed.values
+          .where((s) => s.name == prefs.getString(_cpuSpeed))
+          .firstOrNull,
     );
   }
 
@@ -50,6 +54,7 @@ class ConfigRepository {
       prefs.setInt(_aiDifficulty, config.aiDifficulty),
       prefs.setInt(_nakChancePercent, config.nakChancePercent),
       prefs.setInt(_malCount, config.malCount),
+      prefs.setString(_cpuSpeed, config.cpuSpeed.name),
     ]);
   }
 }

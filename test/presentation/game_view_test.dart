@@ -63,15 +63,31 @@ void main() {
       );
     });
 
-    test('윷 표시는 던지기·말 선택·이동 중에만 보인다', () {
-      for (final s in GameStatus.values) {
-        final visible = {
-          GameStatus.throwing,
-          GameStatus.selectingMal,
-          GameStatus.moving,
-        }.contains(s);
-        expect(stateOf(s).isYutDisplayVisible, visible, reason: '$s');
-      }
+    test('윷 표시는 던지는 동안에만 보이고, 말 선택·말 이동 중에는 판을 가리지 않는다', () {
+      expect(stateOf(GameStatus.throwing).isYutDisplayVisible, isTrue);
+      expect(
+        stateOf(GameStatus.moving).isYutDisplayVisible,
+        isTrue,
+        reason: '던진 직후 애니메이션(움직이는 말 없음)',
+      );
+      expect(
+        stateOf(GameStatus.moving).copyWith(movingMalId: 0).isYutDisplayVisible,
+        isFalse,
+        reason: '말 이동 중',
+      );
+      expect(stateOf(GameStatus.selectingMal).isYutDisplayVisible, isFalse);
+      expect(stateOf(GameStatus.finished).isYutDisplayVisible, isFalse);
+    });
+
+    test('낙 배지는 의미가 드러나게 표시', () {
+      expect(stateOf(GameStatus.throwing).nakBadgeLabel, '낙 확률 15%');
+      final gauge = stateOf(GameStatus.throwing).copyWith(
+        activeConfig: const GameRuleConfig(
+          useGaugeControl: true,
+          nakChancePercent: 25,
+        ),
+      );
+      expect(gauge.nakBadgeLabel, '낙 구간: 어려움');
     });
   });
 
@@ -131,6 +147,69 @@ void main() {
     test('CPU가 말을 고르는 중에는 누를 수 없다 (회귀)', () {
       final s = stateOf(GameStatus.selectingMal, humanTurn: false);
       expect(s.canSelectWaitingMals(s.teams[0]), isFalse);
+    });
+  });
+
+  group('도착 칸 미리보기', () {
+    test('사람 차례 말 선택 중이면 움직일 수 있는 말마다 도착 칸을 보여준다', () {
+      final s = stateOf(
+        GameStatus.selectingMal,
+        teams: [
+          team(0, [3, null]),
+          team(1, [7]),
+        ],
+        throws: [YutResult.gae],
+      );
+      expect(s.destinationPreviews, [
+        (malId: 0, nodeId: 5, finishes: false),
+        (malId: 1, nodeId: 2, finishes: false),
+      ]);
+    });
+
+    test('업힌 말은 한 번만, 골인이면 출발점 칸에 골인 표시', () {
+      final s = stateOf(
+        GameStatus.selectingMal,
+        teams: [
+          team(0, [18, 18]),
+          team(1, [7]),
+        ],
+        throws: [YutResult.geol],
+      );
+      expect(s.destinationPreviews, [(malId: 0, nodeId: 0, finishes: true)]);
+    });
+
+    test('CPU 차례이거나 말 선택 단계가 아니면 없음', () {
+      expect(
+        stateOf(
+          GameStatus.selectingMal,
+          humanTurn: false,
+          throws: [YutResult.do_],
+        ).destinationPreviews,
+        isEmpty,
+      );
+      expect(
+        stateOf(
+          GameStatus.throwing,
+          throws: [YutResult.do_],
+        ).destinationPreviews,
+        isEmpty,
+      );
+    });
+  });
+
+  group('스크린리더 요약', () {
+    test('팀별 판 위 위치·대기·골인 수를 읽어준다', () {
+      final s = stateOf(
+        GameStatus.throwing,
+        teams: [
+          team(0, [3, null, null], finished: {2}),
+          team(1, [7, 7]),
+        ],
+      );
+      expect(s.boardSummary, [
+        'A팀: 판 위 3번 칸, 대기 1개, 골인 1개',
+        'B팀: 판 위 7번 칸 2개 업힘, 대기 0개, 골인 0개',
+      ]);
     });
   });
 

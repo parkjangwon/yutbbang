@@ -14,50 +14,55 @@ class ForfeitButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isGameActive = state.status != GameStatus.finished;
 
-    return GestureDetector(
-      onTap: isGameActive ? () => _showForfeitDialog(context, ref) : null,
-      child: Container(
-        width: 75,
-        height: 75,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isGameActive
-                ? [Colors.red.shade400, Colors.red.shade800]
-                : [Colors.grey.shade400, Colors.grey.shade600],
-          ),
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 15,
-              spreadRadius: 0,
-              color: isGameActive
-                  ? Colors.red.withValues(alpha: 0.4)
-                  : Colors.grey.withValues(alpha: 0.3),
-              offset: const Offset(0, 4),
+    return Semantics(
+      button: true,
+      label: '기권',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: isGameActive ? () => _showForfeitDialog(context, ref) : null,
+        child: Container(
+          width: 75,
+          height: 75,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isGameActive
+                  ? [Colors.red.shade400, Colors.red.shade800]
+                  : [Colors.grey.shade400, Colors.grey.shade600],
             ),
-          ],
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.4),
-            width: 2,
-          ),
-        ),
-        child: const Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.flag, color: Colors.white, size: 30),
-              Text(
-                '기권',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 8,
-                  fontWeight: FontWeight.bold,
-                ),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 15,
+                spreadRadius: 0,
+                color: isGameActive
+                    ? Colors.red.withValues(alpha: 0.4)
+                    : Colors.grey.withValues(alpha: 0.3),
+                offset: const Offset(0, 4),
               ),
             ],
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.4),
+              width: 2,
+            ),
+          ),
+          child: const Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.flag, color: Colors.white, size: 30),
+                Text(
+                  '기권',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

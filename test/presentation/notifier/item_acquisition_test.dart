@@ -28,6 +28,7 @@ void main() {
       expect(scene.state.teams[0].items, [ItemType.freeze]);
       expect(scene.state.itemTiles, {9});
       expect(scene.state.justAcquiredItem, ItemType.freeze);
+      expect(scene.state.actionLog.last, 'A팀: ❄️ 얼음탄 획득');
       await scene.finish(tester);
     });
 

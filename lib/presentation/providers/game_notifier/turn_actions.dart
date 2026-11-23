@@ -21,6 +21,11 @@ mixin _TurnActions on _GameNotifierBase {
   }
 
   void _applyTurnAdvance(TurnAdvance advance) {
+    for (int i = 0; i < advance.teams.length; i++) {
+      if (state.teams[i].skipNextTurn && !advance.teams[i].skipNextTurn) {
+        _log('${advance.teams[i].name}: ❄️ 얼어서 차례를 건너뜁니다');
+      }
+    }
     final nextIndex = advance.nextTurnIndex;
     if (nextIndex == null) {
       state = state.copyWith(teams: advance.teams, status: GameStatus.finished);
@@ -39,7 +44,7 @@ mixin _TurnActions on _GameNotifierBase {
     );
 
     if (!_isHumanTurn) {
-      _later(const Duration(milliseconds: 1500), () {
+      _aiLater(1500, () {
         if (state.status == GameStatus.throwing) {
           _aiProcessItems();
           throwYut();

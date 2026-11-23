@@ -39,6 +39,21 @@ abstract final class MalRenderer {
         ..strokeWidth = 2,
     );
 
+    // 팀 글자(색각 이상 사용자도 구분할 수 있게)
+    final letter = TextPainter(
+      text: TextSpan(
+        text: teamColor.letter,
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+          fontSize: radius * 0.9,
+          shadows: const [Shadow(blurRadius: 2, color: Colors.black45)],
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    letter.paint(canvas, center - Offset(letter.width / 2, letter.height / 2));
+
     if (stackCount > 1) {
       final textPainter = TextPainter(
         text: TextSpan(

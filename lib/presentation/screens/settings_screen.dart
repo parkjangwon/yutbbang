@@ -36,6 +36,10 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           Text('현재 난이도: ${config.aiDifficulty}', textAlign: TextAlign.center),
+          const SizedBox(height: 16),
+          const SectionHeader('CPU 속도'),
+          const SizedBox(height: 8),
+          CpuSpeedChips(config: config, onChanged: update),
           const Divider(height: 40),
           const SectionHeader('게임당 말'),
           MalCountSlider(config: config, onChanged: update),
@@ -67,15 +71,6 @@ class SettingsScreen extends ConsumerWidget {
             ).push(MaterialPageRoute(builder: (_) => const YutGuideScreen())),
           ),
           const SizedBox(height: 40),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.brown,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 15),
-            ),
-            child: const Text('닫기'),
-          ),
         ],
       ),
     );

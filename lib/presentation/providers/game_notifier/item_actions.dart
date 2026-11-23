@@ -20,6 +20,8 @@ mixin _ItemActions on _GameNotifierBase {
         justAcquiredItem: item,
         justAcquiredItemTeamName: team.name,
       );
+      final acquired = GameItem.fromType(item);
+      _log('${team.name}: ${acquired.emoji} ${acquired.name} 획득');
       _later(const Duration(milliseconds: 2500), () {
         state = state.copyWith(
           justAcquiredItem: null,
@@ -88,7 +90,14 @@ mixin _ItemActions on _GameNotifierBase {
       ItemType.fixedDice => _useFixedDice(teamIndex),
       ItemType.shield || ItemType.moonwalk => false,
     };
-    if (success) _consumeItem(teamIndex, itemType);
+    if (success) _onItemUsed(teamIndex, itemType);
+  }
+
+  @override
+  void _onItemUsed(int teamIndex, ItemType type) {
+    _consumeItem(teamIndex, type);
+    final item = GameItem.fromType(type);
+    _log('${state.teams[teamIndex].name}: ${item.emoji} ${item.name} 사용');
   }
 
   bool _useReroll() {

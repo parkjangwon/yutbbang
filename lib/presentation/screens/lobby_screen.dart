@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'settings_screen.dart';
+import 'yut_guide_screen.dart';
 import 'game_setup_screen.dart';
 
 class LobbyScreen extends ConsumerWidget {
@@ -69,6 +70,15 @@ class LobbyScreen extends ConsumerWidget {
                 },
                 child: const Text(
                   '기본 설정',
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const YutGuideScreen()),
+                ),
+                child: const Text(
+                  '게임 방법',
                   style: TextStyle(color: Colors.white, fontSize: 18),
                 ),
               ),

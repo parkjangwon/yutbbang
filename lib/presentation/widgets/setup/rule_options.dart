@@ -128,6 +128,35 @@ class NakChanceChips extends StatelessWidget {
   }
 }
 
+/// CPU 행동 속도 선택.
+class CpuSpeedChips extends StatelessWidget {
+  final GameRuleConfig config;
+  final ValueChanged<GameRuleConfig> onChanged;
+
+  const CpuSpeedChips({
+    super.key,
+    required this.config,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      children: [
+        for (final speed in CpuSpeed.values)
+          ChoiceChip(
+            label: Text(speed.label),
+            selected: config.cpuSpeed == speed,
+            onSelected: (selected) {
+              if (selected) onChanged(config.copyWith(cpuSpeed: speed));
+            },
+          ),
+      ],
+    );
+  }
+}
+
 /// 게임당 말 수(2~5) 슬라이더.
 class MalCountSlider extends StatelessWidget {
   final GameRuleConfig config;

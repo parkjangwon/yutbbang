@@ -65,7 +65,9 @@ mixin _SetupActions on _GameNotifierBase {
   }
 
   /// [gameConfig]로 새 판을 시작한다. 첫 차례가 CPU면 2초 뒤 자동으로 던진다.
+  /// 이전 판에 예약돼 있던 행동은 모두 무시된다.
   void startGameWithConfig(GameRuleConfig gameConfig) {
+    _startNewSession();
     state = _buildInitialState(state.config, gameConfig).copyWith(
       status: GameStatus.throwing,
       itemTiles: gameConfig.useItemMode
@@ -74,12 +76,18 @@ mixin _SetupActions on _GameNotifierBase {
     );
 
     if (!_isHumanTurn) {
-      _later(const Duration(milliseconds: 2000), () {
+      _aiLater(2000, () {
         if (state.status == GameStatus.throwing) {
           _aiProcessItems();
           throwYut();
         }
       });
     }
+  }
+
+  /// 진행 중인 판을 버리고 로비 상태로 돌아간다. 예약된 CPU 행동도 멈춘다.
+  void exitGame() {
+    _startNewSession();
+    state = _buildInitialState(state.config, state.config);
   }
 }

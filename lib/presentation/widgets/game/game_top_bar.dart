@@ -1,6 +1,9 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../providers/game_provider.dart';
 import '../../providers/game_state.dart';
+import '../../screens/yut_guide_screen.dart';
 import 'game_status_text.dart';
 import 'team_colors.dart';
 import 'turn_indicator.dart';
@@ -34,7 +37,7 @@ class GameTopBar extends StatelessWidget {
             children: [
               TurnIndicator(team: state.currentTeam),
               const SizedBox(height: 6),
-              NakIndicator(config: state.activeConfig),
+              NakIndicator(state: state),
             ],
           ),
           // 상태 텍스트 (선택 또는 결과)
@@ -45,6 +48,8 @@ class GameTopBar extends StatelessWidget {
               child: GameStatusText(state: state),
             ),
           ),
+          const GameHelpButton(),
+          const SizedBox(width: 8),
           const GameCloseButton(),
         ],
       ),
@@ -52,8 +57,68 @@ class GameTopBar extends StatelessWidget {
   }
 }
 
-class GameCloseButton extends StatelessWidget {
+/// 게임 중 가이드 열기.
+class GameHelpButton extends StatelessWidget {
+  const GameHelpButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return _CircleIconButton(
+      icon: Icons.help_outline,
+      tooltip: '게임 방법',
+      onPressed: () =>
+          Navigator.of(context)
+              .push(MaterialPageRoute(builder: (_) => const YutGuideScreen())),
+    );
+  }
+}
+
+/// 게임 나가기. 진행 중인 판이 사라지므로 확인을 받는다.
+class GameCloseButton extends ConsumerWidget {
   const GameCloseButton({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _CircleIconButton(
+      icon: Icons.close,
+      tooltip: '게임 나가기',
+      onPressed: () async {
+        final leave = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('게임을 나갈까요?'),
+            content: const Text('진행 중인 판은 저장되지 않습니다.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('계속하기'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('나가기'),
+              ),
+            ],
+          ),
+        );
+        if (leave != true || !context.mounted) return;
+        ref.read(gameProvider.notifier).exitGame();
+        Navigator.of(context).maybePop();
+      },
+    );
+  }
+}
+
+class _CircleIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  const _CircleIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -64,8 +129,9 @@ class GameCloseButton extends StatelessWidget {
         boxShadow: [BoxShadow(blurRadius: 5, color: Colors.black12)],
       ),
       child: IconButton(
-        icon: const Icon(Icons.close, color: Colors.brown, size: 28),
-        onPressed: () => Navigator.pop(context),
+        icon: Icon(icon, color: Colors.brown, size: 26),
+        tooltip: tooltip,
+        onPressed: onPressed,
       ),
     );
   }

@@ -56,6 +56,9 @@ class FakeGameNotifier extends GameNotifier {
   @override
   void stopGauge() => calls.add('stopGauge');
 
+  @override
+  void exitGame() => calls.add('exitGame');
+
   GameRuleConfig? startedWith;
 
   @override

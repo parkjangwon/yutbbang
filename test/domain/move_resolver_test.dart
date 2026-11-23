@@ -166,6 +166,7 @@ void main() {
       expect(malOf(out.teams, 10).currentNodeId, isNull);
       expect(malOf(out.teams, 11).currentNodeId, isNull);
       expect(malOf(out.teams, 10).isFinished, isFalse);
+      expect(out.caughtTeamIndexes, [1]);
     });
 
     test('지나치기만 한 칸의 상대 말은 잡지 않는다', () {
@@ -179,6 +180,7 @@ void main() {
         YutResult.gae,
       );
       expect(out.caughtOpponent, isFalse);
+      expect(out.caughtTeamIndexes, isEmpty);
       expect(malOf(out.teams, 10).currentNodeId, 3);
     });
 
@@ -196,6 +198,7 @@ void main() {
       expect(mal.isFinished, isTrue);
       expect(mal.currentNodeId, isNull);
       expect(out.landingNodeId, 0);
+      expect(out.finished, isTrue);
     });
 
     test('빽도 날기 골인은 상대의 대기·완주 말을 건드리지 않는다 (회귀)', () {

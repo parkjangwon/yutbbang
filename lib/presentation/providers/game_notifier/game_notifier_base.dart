@@ -5,6 +5,9 @@ abstract class _GameNotifierBase extends Notifier<GameState> {
   Timer? _gaugeTimer;
   double _gaugeDirection = 1.0;
 
+  /// 판(세션) 번호. 새 판을 시작하거나 나가면 바뀌어, 이전 판에 예약된 행동을 무효로 만든다.
+  int _session = 0;
+
   Random get _random => ref.read(gameRandomProvider);
   ConfigRepository get _configRepository => ref.read(configRepositoryProvider);
 
@@ -34,14 +37,47 @@ abstract class _GameNotifierBase extends Notifier<GameState> {
   bool _banishMal(int teamIndex, int malId);
   bool _swapMals(int teamIndex, int myMalId, int targetMalId);
   void _aiProcessItems();
+  void _onItemUsed(int teamIndex, ItemType type);
 
   // --- 공통 헬퍼 ---
 
-  /// [delay] 뒤에 [action]을 실행한다. 그 사이 provider가 사라졌으면 건너뛴다.
+  /// [delay] 뒤에 [action]을 실행한다.
+  /// 그 사이 provider가 사라졌거나 다른 판이 시작됐으면 건너뛴다.
   void _later(Duration delay, void Function() action) {
+    final session = _session;
     Future.delayed(delay, () {
-      if (ref.mounted) action();
+      if (ref.mounted && session == _session) action();
     });
+  }
+
+  /// CPU 행동 대기. CPU 속도 설정에 따라 [milliseconds]를 늘이거나 줄인다.
+  void _aiLater(int milliseconds, void Function() action) {
+    final scaled = (milliseconds * _rules.cpuSpeed.delayScale).round();
+    _later(Duration(milliseconds: scaled), action);
+  }
+
+  /// 이전 판의 예약 행동과 게이지를 모두 무효로 만든다.
+  void _startNewSession() {
+    _session++;
+    _cancelGauge();
+  }
+
+  /// 행동 기록에 한 줄 추가(최근 [GameState.maxLogLength]개 유지).
+  void _log(String message) {
+    final log = [...state.actionLog, message];
+    final overflow = log.length - GameState.maxLogLength;
+    state = state.copyWith(
+      actionLog: overflow > 0 ? log.sublist(overflow) : log,
+    );
+  }
+
+  /// 받침 유무에 따라 '이'/'가'를 붙인다.
+  static String _subject(String name) {
+    if (name.isEmpty) return name;
+    final code = name.codeUnitAt(name.length - 1);
+    final isHangul = code >= 0xAC00 && code <= 0xD7A3;
+    final hasBatchim = isHangul && (code - 0xAC00) % 28 != 0;
+    return '$name${hasBatchim ? '이' : '가'}';
   }
 
   void _setTeams(List<Team> teams) => state = state.copyWith(teams: teams);
@@ -56,7 +92,7 @@ abstract class _GameNotifierBase extends Notifier<GameState> {
     if (_isHumanTurn) {
       _checkAutoMove();
     } else {
-      _later(const Duration(milliseconds: 1500), aiSelectAndMove);
+      _aiLater(1500, aiSelectAndMove);
     }
   }
 

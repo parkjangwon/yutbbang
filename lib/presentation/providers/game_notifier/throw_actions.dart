@@ -21,6 +21,7 @@ mixin _ThrowActions on _GameNotifierBase {
     final result = throwRes.result;
 
     if (_isHumanTurn) _triggerThrowFeedback(result);
+    _log('${state.currentTeam.name}: ${result.label}');
 
     state = state.copyWith(
       lastStickStates: throwRes.sticks,
@@ -31,7 +32,8 @@ mixin _ThrowActions on _GameNotifierBase {
     // 윷 애니메이션이 끝난 뒤 결과를 처리한다.
     _later(const Duration(milliseconds: 1000), () {
       final team = state.currentTeam;
-      if (team.items.contains(ItemType.reroll)) {
+      // 윷·모는 다시 던질 이유가 없으므로 묻지 않는다.
+      if (team.items.contains(ItemType.reroll) && !result.isBonusTurn) {
         if (team.isHuman) {
           state = state.copyWith(showRerollChoice: true);
           return;
@@ -66,7 +68,7 @@ mixin _ThrowActions on _GameNotifierBase {
         status: GameStatus.throwing,
       );
       if (!_isHumanTurn) {
-        _later(const Duration(milliseconds: 1000), throwYut);
+        _aiLater(1000, throwYut);
       }
       return;
     }
@@ -91,7 +93,7 @@ mixin _ThrowActions on _GameNotifierBase {
         status: GameStatus.selectingMal,
       );
       if (!_isHumanTurn) {
-        _later(const Duration(milliseconds: 1500), aiSelectAndMove);
+        _aiLater(1500, aiSelectAndMove);
       }
       return;
     }
@@ -107,7 +109,7 @@ mixin _ThrowActions on _GameNotifierBase {
     }
     state = state.copyWith(status: GameStatus.selectingMal);
     if (!_isHumanTurn) {
-      _later(const Duration(milliseconds: 1500), aiSelectAndMove);
+      _aiLater(1500, aiSelectAndMove);
     }
   }
 
@@ -134,7 +136,7 @@ mixin _ThrowActions on _GameNotifierBase {
     state = state.copyWith(status: GameStatus.throwing, lastResult: null);
     HapticFeedback.mediumImpact();
     if (!isHuman) {
-      _later(const Duration(milliseconds: 1000), throwYut);
+      _aiLater(1000, throwYut);
     }
   }
 

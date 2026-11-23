@@ -49,6 +49,10 @@ class GameState {
   final String? itemMessage;
   final String? bonusMessage; // 추가: 보너스 턴 알림 메시지
 
+  /// 최근 행동 기록(오래된 것부터, 최대 [maxLogLength]개).
+  final List<String> actionLog;
+  static const int maxLogLength = 5;
+
   GameState({
     required this.config,
     required this.activeConfig,
@@ -77,6 +81,7 @@ class GameState {
     this.isFixedDiceActive = false,
     this.itemMessage,
     this.bonusMessage,
+    this.actionLog = const [],
   });
 
   int get currentTeamIndex => turnIndex % teams.length;
@@ -115,6 +120,7 @@ class GameState {
     bool? isFixedDiceActive,
     Object? itemMessage = _unset,
     Object? bonusMessage = _unset,
+    List<String>? actionLog,
   }) {
     return GameState(
       config: config ?? this.config,
@@ -158,6 +164,7 @@ class GameState {
       bonusMessage: bonusMessage == _unset
           ? this.bonusMessage
           : bonusMessage as String?,
+      actionLog: actionLog ?? this.actionLog,
     );
   }
 }

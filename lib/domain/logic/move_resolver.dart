@@ -10,15 +10,23 @@ class MoveOutcome {
 
   /// 말이 실제로 멈춘 칸. 판 밖(완주·출발점)으로 나가면 완주 직전 칸 또는 null.
   final int? landingNodeId;
-  final bool caughtOpponent;
   final bool caughtHuman;
+
+  /// 말을 잡힌 팀 인덱스.
+  final List<int> caughtTeamIndexes;
+
+  /// 이번 이동으로 골인했는지.
+  final bool finished;
 
   const MoveOutcome({
     required this.teams,
     required this.landingNodeId,
-    required this.caughtOpponent,
     required this.caughtHuman,
+    this.caughtTeamIndexes = const [],
+    this.finished = false,
   });
+
+  bool get caughtOpponent => caughtTeamIndexes.isNotEmpty;
 }
 
 /// 말 이동 경로 계산과 이동 결과(업기·잡기·자동 임신) 적용. 상태를 바꾸지 않는 순수 로직.
@@ -169,7 +177,7 @@ class MoveResolver {
       (t) => t.copyWith(mals: updatedMals),
     );
 
-    bool caughtOpponent = false;
+    final caughtTeamIndexes = <int>[];
     bool caughtHuman = false;
     // 판 밖(완주·출발점)에 있는 말은 잡을 수 없다.
     if (landingNodeId != null && landingNodeId >= 0) {
@@ -177,7 +185,7 @@ class MoveResolver {
         if (i == teamIndex) continue;
         final other = nextTeams[i];
         if (!other.mals.any((m) => m.currentNodeId == landingNodeId)) continue;
-        caughtOpponent = true;
+        caughtTeamIndexes.add(i);
         if (other.isHuman) caughtHuman = true;
         nextTeams = nextTeams.updatedAt(
           i,
@@ -191,8 +199,9 @@ class MoveResolver {
     return MoveOutcome(
       teams: nextTeams,
       landingNodeId: landingNodeId,
-      caughtOpponent: caughtOpponent,
       caughtHuman: caughtHuman,
+      caughtTeamIndexes: caughtTeamIndexes,
+      finished: isFinishing,
     );
   }
 

@@ -46,6 +46,13 @@ void main() {
     );
   });
 
+  test('CPU 속도를 저장한다', () async {
+    SharedPreferences.setMockInitialValues({});
+    await repo.save(const GameRuleConfig(cpuSpeed: CpuSpeed.slow));
+    final c = await repo.load(() => const GameRuleConfig());
+    expect(c.cpuSpeed, CpuSpeed.slow);
+  });
+
   test('판마다 정하는 값(팀 수)은 저장하지 않는다', () async {
     SharedPreferences.setMockInitialValues({});
     await repo.save(const GameRuleConfig(teamCount: 4));

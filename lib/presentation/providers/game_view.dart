@@ -1,3 +1,5 @@
+import '../../domain/logic/move_resolver.dart';
+import '../../domain/logic/path_finder.dart';
 import '../../domain/models/team.dart';
 import 'game_state.dart';
 
@@ -6,6 +8,9 @@ enum MalTapAction { none, select, itemTarget }
 
 /// 상단 바의 두 줄 문구. 없으면 null.
 typedef StatusLines = ({String? result, String? guide});
+
+/// 말을 고르기 전 미리 보여줄 도착 칸. 골인이면 출발점(0번) 칸에 표시한다.
+typedef DestinationPreview = ({int malId, int nodeId, bool finishes});
 
 /// UI가 화면을 그릴 때 쓰는 파생 값. 상태를 바꾸지 않는다.
 extension GameStateView on GameState {
@@ -27,10 +32,75 @@ extension GameStateView on GameState {
 
   bool get showForfeitButton => _humanTurn && status != GameStatus.finished;
 
+  /// 윷은 던지는 동안에만 보인다. 말을 고르거나 말이 움직일 때는 판을 가리지 않게 숨긴다.
   bool get isYutDisplayVisible =>
       status == GameStatus.throwing ||
-      status == GameStatus.selectingMal ||
-      status == GameStatus.moving;
+      (status == GameStatus.moving && movingMalId == null);
+
+  String get nakBadgeLabel {
+    final nak = activeConfig.nakChancePercent;
+    if (!activeConfig.useGaugeControl) return '낙 확률 $nak%';
+    final level = nak >= 25 ? '어려움' : (nak >= 15 ? '보통' : '쉬움');
+    return '낙 구간: $level';
+  }
+
+  /// 사람 차례 말 선택 중, 움직일 수 있는 말(업힌 말은 하나로)의 도착 칸.
+  /// 지름길 갈림길에서는 지름길을 타지 않는 기본 경로로 계산한다.
+  List<DestinationPreview> get destinationPreviews {
+    final result = pendingThrow;
+    if (!_humanTurn || status != GameStatus.selectingMal || result == null) {
+      return const [];
+    }
+    final team = currentTeam;
+    final seenPositions = <int?>{};
+    final previews = <DestinationPreview>[];
+    for (final mal in MoveResolver.movableMals(
+      team,
+      result,
+      backDoFlying: activeConfig.backDoFlying,
+    )) {
+      if (!seenPositions.add(mal.currentNodeId)) continue;
+      final path = MoveResolver.planPath(
+        teams: teams,
+        team: team,
+        mal: mal,
+        result: result,
+        backDoFlying: activeConfig.backDoFlying,
+      );
+      if (path.isEmpty) continue;
+      final finishes = path.last == PathFinder.finishNodeId;
+      final nodeId = finishes
+          ? (path.length >= 2 ? path[path.length - 2] : 0)
+          : path.last;
+      if (nodeId < 0) continue;
+      previews.add((malId: mal.id, nodeId: nodeId, finishes: finishes));
+    }
+    return previews;
+  }
+
+  /// 스크린리더용 팀별 현황.
+  List<String> get boardSummary => [
+    for (final team in teams)
+      [
+        '${team.name}: ',
+        if (team.hasForfeit)
+          '기권'
+        else ...[
+          for (final entry in _positionsOf(team).entries)
+            '판 위 ${entry.key}번 칸${entry.value > 1 ? ' ${entry.value}개 업힘' : ''}, ',
+          '대기 ${team.mals.where((m) => m.isWaiting).length}개, ',
+          '골인 ${team.finishedCount}개',
+        ],
+      ].join(),
+  ];
+
+  static Map<int, int> _positionsOf(Team team) {
+    final counts = <int, int>{};
+    for (final mal in team.mals.where((m) => m.isOnBoard)) {
+      counts.update(mal.currentNodeId!, (c) => c + 1, ifAbsent: () => 1);
+    }
+    return counts;
+  }
 
   MalTapAction malTapAction(Mal mal) {
     if (mal.isFinished) return MalTapAction.none;

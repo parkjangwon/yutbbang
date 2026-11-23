@@ -26,6 +26,6 @@ mixin _AiItemActions on _GameNotifierBase {
       ),
       ItemType.reroll || ItemType.shield || ItemType.moonwalk => false,
     };
-    if (used) _consumeItem(teamIndex, decision.item);
+    if (used) _onItemUsed(teamIndex, decision.item);
   }
 }

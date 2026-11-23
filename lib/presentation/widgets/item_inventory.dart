@@ -17,54 +17,31 @@ class ItemInventory extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    // 화면 크기에 따라 레이아웃 변경
-    final isWide = MediaQuery.of(context).size.width > 600;
+    // 가로 화면: 오른쪽 위(던지기 버튼은 오른쪽 아래), 세로 화면: 판 위 가운데.
+    final landscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '${team.name}의 가방',
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.brown,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: _buildItemSlots(context, ref, team.items),
+        ),
+      ],
+    );
 
-    if (isWide) {
-      // 태블릿: 우측 세로 정렬
-      return Positioned(
-        right: 20,
-        top: 100,
-        child: Column(
-          children: [
-            Text(
-              '${team.name} 가방',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.brown,
-              ),
-            ),
-            const SizedBox(height: 4),
-            ..._buildItemSlots(context, ref, team.items),
-          ],
-        ),
-      );
-    } else {
-      // 모바일: 상단 가로 정렬
-      return Positioned(
-        top: 80,
-        left: 0,
-        right: 0,
-        child: Column(
-          children: [
-            Text(
-              '${team.name}의 가방',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.brown,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: _buildItemSlots(context, ref, team.items),
-            ),
-          ],
-        ),
-      );
-    }
+    return landscape
+        ? Positioned(top: 12, right: 16, child: content)
+        : Positioned(top: 80, left: 0, right: 0, child: Center(child: content));
   }
 
   List<Widget> _buildItemSlots(
@@ -88,46 +65,54 @@ class ItemInventory extends ConsumerWidget {
     final state = ref.watch(gameProvider);
     final isMyTurn = state.currentTeam.isHuman;
 
-    return GestureDetector(
-      onTap: item != null && isMyTurn
-          ? () => _useItem(context, ref, item)
-          : null,
-      onLongPress: item != null
-          ? () => _showItemDescription(context, item)
-          : null,
-      child: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          gradient: item != null
-              ? LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Colors.amber.shade300, Colors.amber.shade700],
-                )
-              : null,
-          color: item == null ? Colors.grey.shade300 : null,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isMyTurn && item != null
-                ? Colors.white
-                : Colors.grey.shade400,
-            width: 2,
+    final name = item == null ? null : GameItem.fromType(item).name;
+    return Semantics(
+      button: item != null,
+      label: name == null ? '빈 칸' : '가방: $name',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: item != null && isMyTurn
+            ? () => _useItem(context, ref, item)
+            : null,
+        onLongPress: item != null
+            ? () => _showItemDescription(context, item)
+            : null,
+        child: Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            gradient: item != null
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.amber.shade300, Colors.amber.shade700],
+                  )
+                : null,
+            color: item == null ? Colors.white.withValues(alpha: 0.35) : null,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isMyTurn && item != null
+                  ? Colors.white
+                  : Colors.brown.shade200,
+              width: 2,
+            ),
+            boxShadow: item != null
+                ? [
+                    BoxShadow(
+                      blurRadius: 8,
+                      color: Colors.amber.withValues(alpha: 0.4),
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
-          boxShadow: item != null
-              ? [
-                  BoxShadow(
-                    blurRadius: 8,
-                    color: Colors.amber.withValues(alpha: 0.4),
-                    offset: const Offset(0, 2),
+          child: Center(
+            child: item == null
+                ? null
+                : Text(
+                    GameItem.fromType(item).emoji,
+                    style: const TextStyle(fontSize: 32),
                   ),
-                ]
-              : null,
-        ),
-        child: Center(
-          child: Text(
-            item != null ? GameItem.fromType(item).emoji : '?',
-            style: const TextStyle(fontSize: 32),
           ),
         ),
       ),

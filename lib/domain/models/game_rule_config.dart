@@ -1,5 +1,16 @@
 enum TeamSetup { oneVsOne, twoVsTwo, freeForAll }
 
+/// CPU 행동 사이 대기 시간 배율.
+enum CpuSpeed {
+  fast(0.5, '빠름'),
+  normal(1.0, '보통'),
+  slow(1.6, '느림');
+
+  final double delayScale;
+  final String label;
+  const CpuSpeed(this.delayScale, this.label);
+}
+
 class GameRuleConfig {
   final bool useBackDo;
   final bool nakPenaltyTurnEnd;
@@ -15,6 +26,7 @@ class GameRuleConfig {
   final bool roastedChestnutMode; // 군밤 모드: 지름길 구간에서 항상 최단 거리로 이동
   final bool useItemMode; // 아이템 모드: 게임판에 아이템 타일 추가
   final List<int> teamControllers;
+  final CpuSpeed cpuSpeed;
 
   const GameRuleConfig({
     this.useBackDo = true,
@@ -31,6 +43,7 @@ class GameRuleConfig {
     this.roastedChestnutMode = false,
     this.useItemMode = false,
     this.teamControllers = const [1, 0, 0, 0],
+    this.cpuSpeed = CpuSpeed.normal,
   });
 
   /// [teamIndex] 팀의 조작자를 바꾼다(0 = CPU, 1~4 = 플레이어 번호).
@@ -79,6 +92,7 @@ class GameRuleConfig {
     bool? roastedChestnutMode,
     bool? useItemMode,
     List<int>? teamControllers,
+    CpuSpeed? cpuSpeed,
   }) {
     return GameRuleConfig(
       useBackDo: useBackDo ?? this.useBackDo,
@@ -95,6 +109,7 @@ class GameRuleConfig {
       roastedChestnutMode: roastedChestnutMode ?? this.roastedChestnutMode,
       useItemMode: useItemMode ?? this.useItemMode,
       teamControllers: teamControllers ?? this.teamControllers,
+      cpuSpeed: cpuSpeed ?? this.cpuSpeed,
     );
   }
 }

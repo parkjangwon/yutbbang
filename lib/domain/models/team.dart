@@ -1,6 +1,14 @@
 import 'game_item.dart';
 
-enum TeamColor { orange, green, red, blue }
+enum TeamColor {
+  orange,
+  green,
+  red,
+  blue;
+
+  /// 색 없이도 팀을 구분하는 글자(A~D).
+  String get letter => String.fromCharCode(65 + index);
+}
 
 class Mal {
   static const Object _unset = Object();

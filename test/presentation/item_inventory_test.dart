@@ -37,10 +37,10 @@ void main() {
     expect(find.textContaining('가방'), findsNothing);
   });
 
-  testWidgets('빈 칸은 ?로 표시', (tester) async {
+  testWidgets('아이템 칸과 빈 칸', (tester) async {
     await pumpInventory(tester, const [ItemType.magnet]);
     expect(find.text('🧲'), findsOneWidget);
-    expect(find.text('?'), findsOneWidget);
+    expect(find.bySemanticsLabel('빈 칸'), findsOneWidget);
   });
 
   testWidgets('수동 아이템을 누르면 사용한다', (tester) async {

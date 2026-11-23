@@ -63,6 +63,25 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
         backgroundColor: Colors.brown,
         foregroundColor: Colors.white,
       ),
+      // 시작 버튼은 스크롤과 관계없이 항상 하단에 보이게 고정한다.
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+        child: ElevatedButton(
+          onPressed: _start,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.orange,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+          ),
+          child: const Text(
+            '배틀 시작!',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -117,25 +136,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
               config: config,
               onChanged: _update,
             ),
-            const SizedBox(height: 50),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _start,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                ),
-                child: const Text(
-                  '배틀 시작!',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
