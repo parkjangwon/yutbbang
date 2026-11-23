@@ -2,6 +2,9 @@ import '../../domain/models/game_rule_config.dart';
 import '../../domain/models/team.dart';
 import '../../domain/models/yut_result.dart';
 import '../../domain/models/game_item.dart';
+import '../../domain/models/nak_zone.dart';
+
+export '../../domain/models/nak_zone.dart';
 
 enum GameStatus {
   lobby,
@@ -13,12 +16,6 @@ enum GameStatus {
   awaitingBanishTarget, // 강제 귀가 대상 선택
   awaitingSwapSource, // 위치 교환 내 말 선택
   awaitingSwapTarget, // 위치 교환 상대 말 선택
-}
-
-class NakZone {
-  final double start;
-  final double end;
-  const NakZone(this.start, this.end);
 }
 
 class GameState {
@@ -82,7 +79,11 @@ class GameState {
     this.bonusMessage,
   });
 
-  Team get currentTeam => teams[turnIndex % teams.length];
+  int get currentTeamIndex => turnIndex % teams.length;
+  Team get currentTeam => teams[currentTeamIndex];
+
+  /// 이번에 쓸 윷 결과(가장 먼저 나온 것). 없으면 null.
+  YutResult? get pendingThrow => currentThrows.firstOrNull;
 
   static const Object _unset = Object();
 

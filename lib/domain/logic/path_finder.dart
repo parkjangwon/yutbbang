@@ -15,10 +15,11 @@ class PathFinder {
     bool isReverse = false,
   }) {
     if (result == YutResult.nak) return [];
-    if ((result == YutResult.backDo || isReverse) && startId == startNodeId)
+    if ((result == YutResult.backDo || isReverse) && startId == startNodeId) {
       return [];
+    }
 
-    List<int> path = [];
+    final path = <int>[];
     int currentId = startId;
     int moves = result.moveCount.abs();
 

@@ -1,7 +1,7 @@
 import 'package:flame/game.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../domain/models/yut_result.dart';
+
 import '../presentation/providers/game_provider.dart';
 import '../presentation/providers/game_state.dart';
 import 'components/board_component.dart';
@@ -83,13 +83,6 @@ class YutGame extends FlameGame {
         } else {
           _pendingMalIds.remove(mal.id);
 
-          // Pass movement info if this specific mal is moving
-          YutResult? moveResult;
-          if (state.movingMalId == mal.id && state.currentPath.isNotEmpty) {
-            // We don't have the result easily here, but PathFinder uses it.
-            // Actually MalComponent.updateFromState calculates its own path if result is provided.
-            // Let's change MalComponent to just follow state.currentPath.
-          }
           existing.updateFromState(
             mal,
             stackCount,

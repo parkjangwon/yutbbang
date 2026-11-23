@@ -1,10 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'game_screen.dart';
+
 import 'settings_screen.dart';
 import 'game_setup_screen.dart';
-import '../providers/game_provider.dart';
 
 class LobbyScreen extends ConsumerWidget {
   const LobbyScreen({super.key});
@@ -83,7 +82,7 @@ class LobbyScreen extends ConsumerWidget {
                       return Text(
                         'v${snapshot.data!.version}',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 14,
                           fontWeight: FontWeight.w300,
                         ),

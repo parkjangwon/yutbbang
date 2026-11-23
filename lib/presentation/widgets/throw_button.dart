@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../providers/game_provider.dart';
 import '../providers/game_state.dart';
 
@@ -54,14 +55,16 @@ class InteractiveThrowButton extends ConsumerWidget {
               BoxShadow(
                 blurRadius: state.isGaugeRunning ? 30 : 15,
                 spreadRadius: state.isGaugeRunning ? 8 : 0,
-                color: Colors.orange.withOpacity(
-                  state.isGaugeRunning ? 0.7 : 0.4,
+                color: Colors.orange.withValues(
+                  alpha: state.isGaugeRunning ? 0.7 : 0.4,
                 ),
                 offset: Offset(0, state.isGaugeRunning ? 6 : 4),
               ),
             ],
             border: Border.all(
-              color: Colors.white.withOpacity(state.isGaugeRunning ? 0.9 : 0.4),
+              color: Colors.white.withValues(
+                alpha: state.isGaugeRunning ? 0.9 : 0.4,
+              ),
               width: state.isGaugeRunning ? 4 : 2,
             ),
           ),

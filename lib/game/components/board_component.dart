@@ -1,10 +1,11 @@
 import 'package:flame/components.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../../domain/logic/board_graph.dart';
 import '../yut_game.dart';
 import '../../presentation/providers/game_provider.dart';
 
-class BoardComponent extends PositionComponent with HasGameRef {
+class BoardComponent extends PositionComponent with HasGameReference {
   static const double nodePaddingRatio =
       0.1; // Use ratio instead of fixed pixels for consistency
 
@@ -20,7 +21,7 @@ class BoardComponent extends PositionComponent with HasGameRef {
   }
 
   void _updateLayout() {
-    final gameSize = gameRef.size;
+    final gameSize = game.size;
     final minDim = gameSize.x < gameSize.y ? gameSize.x : gameSize.y;
     final boardDimension = minDim * 0.85;
 
@@ -97,10 +98,10 @@ class BoardComponent extends PositionComponent with HasGameRef {
 
   void _renderItemTiles(Canvas canvas) {
     // YutGame에서 게임 상태 가져오기
-    if (gameRef is! YutGame) return;
+    if (game is! YutGame) return;
 
     try {
-      final yutGame = gameRef as YutGame;
+      final yutGame = game as YutGame;
       final gameState = yutGame.ref.read(gameProvider);
 
       if (!gameState.activeConfig.useItemMode) return;
@@ -116,7 +117,7 @@ class BoardComponent extends PositionComponent with HasGameRef {
 
         // 황금색 외곽 글로우
         final glowPaint = Paint()
-          ..color = Colors.amber.withOpacity(0.5)
+          ..color = Colors.amber.withValues(alpha: 0.5)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
         canvas.drawCircle(pos, radius, glowPaint);
 
@@ -155,41 +156,8 @@ class BoardComponent extends PositionComponent with HasGameRef {
 
   void _drawSparkle(Canvas canvas, Offset center, double size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.8)
+      ..color = Colors.white.withValues(alpha: 0.8)
       ..style = PaintingStyle.fill;
-
-    final path = Path();
-    for (int i = 0; i < 4; i++) {
-      final angle = (i * 90) * 3.14159 / 180;
-      final x =
-          center.dx + size * 0.5 * (i % 2 == 0 ? 1 : 0.3) * (i < 2 ? 1 : -1);
-      final y =
-          center.dy +
-          size * 0.5 * (i % 2 == 1 ? 1 : 0.3) * ((i == 1 || i == 2) ? 1 : -1);
-
-      if (i == 0) {
-        path.moveTo(center.dx, center.dy - size);
-      }
-      path.lineTo(
-        center.dx +
-            (i == 0
-                ? 0
-                : i == 1
-                ? size * 0.2
-                : i == 2
-                ? 0
-                : -size * 0.2),
-        center.dy +
-            (i == 0
-                ? -size
-                : i == 1
-                ? 0
-                : i == 2
-                ? size
-                : 0),
-      );
-    }
-    path.close();
 
     // 간단한 십자 별 모양
     final sparkleSize = size * 0.6;

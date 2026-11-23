@@ -1,7 +1,7 @@
 import 'package:flame/components.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
-class TimingBarComponent extends PositionComponent with HasGameRef {
+class TimingBarComponent extends PositionComponent with HasGameReference {
   double _value = 0.5;
   double _direction = 1.0;
   final double _speed = 1.5;
@@ -12,11 +12,11 @@ class TimingBarComponent extends PositionComponent with HasGameRef {
 
   @override
   Future<void> onLoad() async {
-    barSprite = await gameRef.loadSprite('assets/images/ui/timing_bar.png');
+    barSprite = await game.loadSprite('assets/images/ui/timing_bar.png');
     // Assuming the arrow is part of the same image or we'll just draw a triangle for now
 
     size = Vector2(300, 60);
-    position = Vector2(gameRef.size.x / 2 - size.x / 2, gameRef.size.y - 150);
+    position = Vector2(game.size.x / 2 - size.x / 2, game.size.y - 150);
   }
 
   void start() => _isActive = true;

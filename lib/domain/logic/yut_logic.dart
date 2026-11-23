@@ -1,4 +1,5 @@
 import 'dart:math';
+
 import '../models/yut_result.dart';
 
 class YutThrowResult {
@@ -8,6 +9,10 @@ class YutThrowResult {
   YutThrowResult(this.result, this.sticks);
 }
 
+/// 윷가락 4개를 던지는 확률 로직.
+///
+/// 막대 값 true = 평평한 면(배)이 위. 평평한 면 개수로 결과가 정해진다:
+/// 1개=도(첫 번째 막대면 빽도), 2개=개, 3개=걸, 4개=윷, 0개=모.
 class YutLogic {
   static final Random _random = Random();
 
@@ -16,14 +21,16 @@ class YutLogic {
     bool forceNak = false,
     double randomNakChance = 0.15,
     bool useBackDo = true,
+    Random? random,
   }) {
+    final rng = random ?? _random;
     // 1. Nak probability
-    if (forceNak || _random.nextDouble() < randomNakChance) {
+    if (forceNak || rng.nextDouble() < randomNakChance) {
       return YutThrowResult(YutResult.nak, [false, false, false, false]);
     }
 
     // 2. Realistic Probability Simulation
-    List<bool> sticks = List.generate(4, (_) => _random.nextBool());
+    final sticks = List.generate(4, (_) => rng.nextBool());
 
     int flatCount = sticks.where((s) => s).length;
     YutResult result;
@@ -46,5 +53,13 @@ class YutLogic {
     }
 
     return YutThrowResult(result, sticks);
+  }
+
+  /// 황금 윷: 윷 또는 모가 50:50으로 나온다.
+  static YutThrowResult throwGolden({Random? random}) {
+    final isYut = (random ?? _random).nextBool();
+    return isYut
+        ? YutThrowResult(YutResult.yut, const [true, true, true, true])
+        : YutThrowResult(YutResult.mo, const [false, false, false, false]);
   }
 }

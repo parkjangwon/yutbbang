@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../providers/game_provider.dart';
 import '../../domain/models/game_rule_config.dart';
+import '../widgets/setup/setup_widgets.dart';
 import 'game_screen.dart';
 
 class GameSetupScreen extends ConsumerStatefulWidget {
@@ -9,35 +11,6 @@ class GameSetupScreen extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<GameSetupScreen> createState() => _GameSetupScreenState();
-}
-
-class _SettingsRow extends StatelessWidget {
-  final String label;
-  final Widget child;
-  const _SettingsRow({required this.label, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.brown,
-              ),
-            ),
-          ),
-          Expanded(flex: 3, child: child),
-        ],
-      ),
-    );
-  }
 }
 
 class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
@@ -91,7 +64,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                 color: Colors.brown,
               ),
             ),
-            _SettingsRow(
+            SettingsRow(
               label: '참여 팀 수',
               child: Wrap(
                 spacing: 8,
@@ -114,73 +87,23 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            ...List.generate(config.teamCount, (i) {
-              final colors = [
-                Colors.orange,
-                Colors.green,
-                Colors.red,
-                Colors.blue,
-              ];
-              final controllerId = config.teamControllers[i];
-              return _SettingsRow(
-                label:
-                    '팀 ${String.fromCharCode(65 + i)} (${['주황', '초록', '빨강', '파랑'][i]})',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      controller: _nameControllers[i],
-                      decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.circle, color: colors[i]),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      onChanged: (val) {
-                        setState(() {
-                          final names = List<String>.from(
-                            _localConfig.teamNames,
-                          );
-                          names[i] = val;
-                          _localConfig = _localConfig.copyWith(
-                            teamNames: names,
-                          );
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: [
-                        _buildControllerChoice(
-                          label: 'CPU',
-                          id: 0,
-                          selected: controllerId == 0,
-                          onSelected: (selected) {
-                            if (selected) _updateController(config, i, 0);
-                          },
-                        ),
-                        ...List.generate(config.teamCount, (pIdx) {
-                          final id = pIdx + 1;
-                          return _buildControllerChoice(
-                            label: '플레이어 $id',
-                            id: id,
-                            selected: controllerId == id,
-                            onSelected: (selected) {
-                              if (selected) _updateController(config, i, id);
-                            },
-                          );
-                        }),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            }),
+            ...List.generate(
+              config.teamCount,
+              (i) => TeamSetupRow(
+                index: i,
+                nameController: _nameControllers[i],
+                controllerId: config.teamControllers[i],
+                teamCount: config.teamCount,
+                onNameChanged: (val) {
+                  setState(() {
+                    final names = List<String>.from(_localConfig.teamNames);
+                    names[i] = val;
+                    _localConfig = _localConfig.copyWith(teamNames: names);
+                  });
+                },
+                onControllerSelected: (id) => _updateController(config, i, id),
+              ),
+            ),
             const Divider(height: 40),
             const Text(
               '게임당 말',
@@ -210,68 +133,40 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _buildNakChoice(
-                  label: '쉬움',
-                  percent: 10,
-                  selected: config.nakChancePercent == 10,
-                  onSelected: (selected) {
-                    if (selected)
-                      setState(() {
-                        _localConfig = _localConfig.copyWith(
-                          nakChancePercent: 10,
-                        );
-                      });
-                  },
-                ),
-                _buildNakChoice(
-                  label: '보통',
-                  percent: 15,
-                  selected: config.nakChancePercent == 15,
-                  onSelected: (selected) {
-                    if (selected)
-                      setState(() {
-                        _localConfig = _localConfig.copyWith(
-                          nakChancePercent: 15,
-                        );
-                      });
-                  },
-                ),
-                _buildNakChoice(
-                  label: '어려움',
-                  percent: 25,
-                  selected: config.nakChancePercent == 25,
-                  onSelected: (selected) {
-                    if (selected)
-                      setState(() {
-                        _localConfig = _localConfig.copyWith(
-                          nakChancePercent: 25,
-                        );
-                      });
-                  },
-                ),
+                for (final (label, percent) in const [
+                  ('쉬움', 10),
+                  ('보통', 15),
+                  ('어려움', 25),
+                ])
+                  _buildNakChoice(
+                    label: label,
+                    percent: percent,
+                    selected: config.nakChancePercent == percent,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _localConfig = _localConfig.copyWith(
+                            nakChancePercent: percent,
+                          );
+                        });
+                      }
+                    },
+                  ),
               ],
             ),
             const Divider(height: 40),
-            SwitchListTile(
-              title: const Text(
-                '빽도 사용',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: const Text('도 하나에 표시된 빽도를 사용합니다.'),
+            RuleSwitchTile(
+              title: '빽도 사용',
+              subtitle: '도 하나에 표시된 빽도를 사용합니다.',
               value: config.useBackDo,
-              activeColor: Colors.brown,
               onChanged: (val) => setState(() {
                 _localConfig = _localConfig.copyWith(useBackDo: val);
               }),
             ),
-            SwitchListTile(
-              title: const Text(
-                '컨트롤 모드',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: const Text('버튼을 누르고 있다가 떼서 결과를 결정합니다.'),
+            RuleSwitchTile(
+              title: '컨트롤 모드',
+              subtitle: '버튼을 누르고 있다가 떼서 결과를 결정합니다.',
               value: config.useGaugeControl,
-              activeColor: Colors.brown,
               onChanged: (val) => setState(() {
                 _localConfig = _localConfig.copyWith(useGaugeControl: val);
               }),
@@ -285,62 +180,42 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                 color: Colors.brown,
               ),
             ),
-            SwitchListTile(
-              title: const Text(
-                '빽도 날기',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: const Text('대기 중인 말이 빽도가 나오면 즉시 골인합니다.'),
+            RuleSwitchTile(
+              title: '빽도 날기',
+              subtitle: '대기 중인 말이 빽도가 나오면 즉시 골인합니다.',
               value: config.backDoFlying,
-              activeColor: Colors.brown,
               onChanged: (val) => setState(() {
                 _localConfig = _localConfig.copyWith(backDoFlying: val);
               }),
             ),
-            SwitchListTile(
-              title: const Text(
-                '자동 임신',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: const Text('중앙 지점 도착 시 대기 중인 말 하나를 자동으로 업습니다.'),
+            RuleSwitchTile(
+              title: '자동 임신',
+              subtitle: '중앙 지점 도착 시 대기 중인 말 하나를 자동으로 업습니다.',
               value: config.autoCarrier,
-              activeColor: Colors.brown,
               onChanged: (val) => setState(() {
                 _localConfig = _localConfig.copyWith(autoCarrier: val);
               }),
             ),
-            SwitchListTile(
-              title: const Text(
-                '전낙',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: const Text('낙 발생 시 해당 턴의 모든 이전 결과가 무효화됩니다.'),
+            RuleSwitchTile(
+              title: '전낙',
+              subtitle: '낙 발생 시 해당 턴의 모든 이전 결과가 무효화됩니다.',
               value: config.totalNak,
-              activeColor: Colors.brown,
               onChanged: (val) => setState(() {
                 _localConfig = _localConfig.copyWith(totalNak: val);
               }),
             ),
-            SwitchListTile(
-              title: const Text(
-                '군밤 모드 🌰',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: const Text('지름길 구간에서 항상 최단 거리로 이동합니다.'),
+            RuleSwitchTile(
+              title: '군밤 모드 🌰',
+              subtitle: '지름길 구간에서 항상 최단 거리로 이동합니다.',
               value: config.roastedChestnutMode,
-              activeColor: Colors.brown,
               onChanged: (val) => setState(() {
                 _localConfig = _localConfig.copyWith(roastedChestnutMode: val);
               }),
             ),
-            SwitchListTile(
-              title: const Text(
-                '아이템 모드',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: const Text('게임판에 아이템 타일이 생성되어 다양한 아이템을 사용할 수 있습니다.'),
+            RuleSwitchTile(
+              title: '아이템 모드',
+              subtitle: '게임판에 아이템 타일이 생성되어 다양한 아이템을 사용할 수 있습니다.',
               value: config.useItemMode,
-              activeColor: Colors.brown,
               onChanged: (val) => setState(() {
                 _localConfig = _localConfig.copyWith(useItemMode: val);
               }),
@@ -447,18 +322,5 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
       }
     }
     return next;
-  }
-
-  Widget _buildControllerChoice({
-    required String label,
-    required int id,
-    required bool selected,
-    required ValueChanged<bool> onSelected,
-  }) {
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: onSelected,
-    );
   }
 }

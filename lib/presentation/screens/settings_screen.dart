@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../providers/game_provider.dart';
 import 'yut_guide_screen.dart';
 
@@ -74,10 +75,11 @@ class SettingsScreen extends ConsumerWidget {
                 percent: 10,
                 selected: config.nakChancePercent == 10,
                 onSelected: (selected) {
-                  if (selected)
+                  if (selected) {
                     gameNotifier.updateConfig(
                       config.copyWith(nakChancePercent: 10),
                     );
+                  }
                 },
                 isControlMode: config.useGaugeControl,
               ),
@@ -86,10 +88,11 @@ class SettingsScreen extends ConsumerWidget {
                 percent: 15,
                 selected: config.nakChancePercent == 15,
                 onSelected: (selected) {
-                  if (selected)
+                  if (selected) {
                     gameNotifier.updateConfig(
                       config.copyWith(nakChancePercent: 15),
                     );
+                  }
                 },
                 isControlMode: config.useGaugeControl,
               ),
@@ -98,10 +101,11 @@ class SettingsScreen extends ConsumerWidget {
                 percent: 25,
                 selected: config.nakChancePercent == 25,
                 onSelected: (selected) {
-                  if (selected)
+                  if (selected) {
                     gameNotifier.updateConfig(
                       config.copyWith(nakChancePercent: 25),
                     );
+                  }
                 },
                 isControlMode: config.useGaugeControl,
               ),
@@ -116,7 +120,7 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('빽도 사용'),
             subtitle: const Text('도 하나에 표시된 빽도를 사용합니다.'),
             value: config.useBackDo,
-            activeColor: Colors.brown,
+            activeThumbColor: Colors.brown,
             onChanged: (val) {
               gameNotifier.updateConfig(config.copyWith(useBackDo: val));
             },
@@ -125,7 +129,7 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('컨트롤 모드'),
             subtitle: const Text('게이지 타이밍으로 결정하는 컨트롤 모드를 기본으로 사용합니다.'),
             value: config.useGaugeControl,
-            activeColor: Colors.brown,
+            activeThumbColor: Colors.brown,
             onChanged: (val) {
               gameNotifier.updateConfig(config.copyWith(useGaugeControl: val));
             },
@@ -139,7 +143,7 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('빽도 날기'),
             subtitle: const Text('대기 중인 말이 빽도가 나오면 즉시 골인합니다.'),
             value: config.backDoFlying,
-            activeColor: Colors.brown,
+            activeThumbColor: Colors.brown,
             onChanged: (val) {
               gameNotifier.updateConfig(config.copyWith(backDoFlying: val));
             },
@@ -148,7 +152,7 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('자동 임신'),
             subtitle: const Text('중앙 지점 도착 시 대기 중인 말 하나를 자동으로 업습니다.'),
             value: config.autoCarrier,
-            activeColor: Colors.brown,
+            activeThumbColor: Colors.brown,
             onChanged: (val) {
               gameNotifier.updateConfig(config.copyWith(autoCarrier: val));
             },
@@ -157,7 +161,7 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('전낙'),
             subtitle: const Text('낙 발생 시 해당 턴의 모든 이전 결과(윷/모 등)가 무효화됩니다.'),
             value: config.totalNak,
-            activeColor: Colors.brown,
+            activeThumbColor: Colors.brown,
             onChanged: (val) {
               gameNotifier.updateConfig(config.copyWith(totalNak: val));
             },
@@ -166,7 +170,7 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('군밤 모드 🌰'),
             subtitle: const Text('지름길 구간에서 항상 최단 거리로 이동합니다.'),
             value: config.roastedChestnutMode,
-            activeColor: Colors.brown,
+            activeThumbColor: Colors.brown,
             onChanged: (val) {
               gameNotifier.updateConfig(
                 config.copyWith(roastedChestnutMode: val),
@@ -177,7 +181,7 @@ class SettingsScreen extends ConsumerWidget {
             title: const Text('아이템 모드'),
             subtitle: const Text('게임판에 아이템 타일이 생성되어 다양한 아이템을 사용할 수 있습니다.'),
             value: config.useItemMode,
-            activeColor: Colors.brown,
+            activeThumbColor: Colors.brown,
             onChanged: (val) {
               gameNotifier.updateConfig(config.copyWith(useItemMode: val));
             },

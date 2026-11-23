@@ -28,7 +28,27 @@ class BoardNode {
 }
 
 class BoardGraph {
+  static const int centerNodeId = 20;
+
   static final Map<int, BoardNode> nodes = _buildNodes();
+
+  /// [startNodeId]에서 앞으로(일반 경로 + 지름길) [maxDistance] 칸 이내의 노드.
+  /// 시작 노드 자신도 포함한다.
+  static Set<int> nodesWithinDistance(int startNodeId, int maxDistance) {
+    final result = <int>{};
+    final queue = <(int, int)>[(startNodeId, 0)];
+    while (queue.isNotEmpty) {
+      final (nodeId, distance) = queue.removeAt(0);
+      if (distance > maxDistance || !result.add(nodeId)) continue;
+      final node = nodes[nodeId];
+      if (node == null || distance == maxDistance) continue;
+      if (node.nextId != null) queue.add((node.nextId!, distance + 1));
+      if (node.shortcutNextId != null) {
+        queue.add((node.shortcutNextId!, distance + 1));
+      }
+    }
+    return result;
+  }
 
   static Map<int, BoardNode> _buildNodes() {
     final map = <int, BoardNode>{};

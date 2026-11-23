@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../domain/models/game_item.dart';
 import '../providers/game_provider.dart';
 
@@ -72,7 +73,7 @@ class ItemInventory extends ConsumerWidget {
     List<ItemType> items,
   ) {
     return [
-      _buildItemSlot(context, ref, items.length > 0 ? items[0] : null, 0),
+      _buildItemSlot(context, ref, items.isNotEmpty ? items[0] : null, 0),
       const SizedBox(width: 8, height: 8),
       _buildItemSlot(context, ref, items.length > 1 ? items[1] : null, 1),
     ];
@@ -117,7 +118,7 @@ class ItemInventory extends ConsumerWidget {
               ? [
                   BoxShadow(
                     blurRadius: 8,
-                    color: Colors.amber.withOpacity(0.4),
+                    color: Colors.amber.withValues(alpha: 0.4),
                     offset: const Offset(0, 2),
                   ),
                 ]

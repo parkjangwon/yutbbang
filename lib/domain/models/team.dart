@@ -20,6 +20,32 @@ class Mal {
     this.isFinished = false,
   });
 
+  /// 판 위에 올라와 있고 아직 완주하지 않은 말인지.
+  bool get isOnBoard => currentNodeId != null && !isFinished;
+
+  /// 출발 전 대기 상태(판 밖, 미완주)인지.
+  bool get isWaiting => currentNodeId == null && !isFinished;
+
+  /// 잡히거나 기권해서 출발점(판 밖)으로 돌아간 말.
+  Mal sentHome() => copyWith(
+    currentNodeId: null,
+    lastNodeId: null,
+    historyNodeIds: const [],
+    isFinished: false,
+  );
+
+  /// 완주 처리된 말.
+  Mal markedFinished() => copyWith(
+    currentNodeId: null,
+    lastNodeId: null,
+    historyNodeIds: const [],
+    isFinished: true,
+  );
+
+  /// 특정 칸으로 순간 이동(태풍·위치 교환 등). 이동 기록은 그 칸 하나로 초기화.
+  Mal teleportedTo(int nodeId) =>
+      copyWith(currentNodeId: nodeId, historyNodeIds: [nodeId]);
+
   Mal copyWith({
     Object? currentNodeId = _unset,
     Object? lastNodeId = _unset,
@@ -60,7 +86,18 @@ class Team {
     this.skipNextTurn = false,
   });
 
+  /// 팀당 최대 보유 아이템 수.
+  static const int maxItems = 2;
+
   int get finishedCount => mals.where((m) => m.isFinished).length;
+  bool get hasMalOnBoard => mals.any((m) => m.isOnBoard);
+  bool get isInventoryFull => items.length >= maxItems;
+
+  Team withItemRemoved(ItemType item) =>
+      copyWith(items: List<ItemType>.from(items)..remove(item));
+
+  Team mapMals(Mal Function(Mal mal) transform) =>
+      copyWith(mals: mals.map(transform).toList());
   bool get isWinner => !hasForfeit && finishedCount == mals.length;
 
   Team copyWith({

@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../domain/models/game_item.dart';
 import '../providers/game_provider.dart';
 
@@ -181,7 +182,7 @@ class ItemChoiceDialog extends ConsumerWidget {
           boxShadow: [
             BoxShadow(
               blurRadius: 8,
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               offset: const Offset(0, 2),
             ),
           ],

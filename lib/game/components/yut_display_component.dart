@@ -1,30 +1,14 @@
 import 'dart:math';
+
 import 'package:flame/components.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
+
 import '../../domain/models/yut_result.dart';
+import 'yut_stick_painter.dart';
 
-class StickConfig {
-  Vector2 position;
-  double angle;
-  Vector2 velocity;
-  double angularVelocity;
-  bool isFlat;
-  double targetAngle;
-  Vector2 targetPosition; // Fixed target to ensure NO overlaps
-
-  StickConfig({
-    required this.position,
-    required this.angle,
-    required this.velocity,
-    required this.angularVelocity,
-    required this.isFlat,
-    required this.targetPosition,
-    this.targetAngle = 0.0,
-  });
-}
-
-class YutDisplayComponent extends PositionComponent with HasGameRef, HasPaint {
+class YutDisplayComponent extends PositionComponent
+    with HasGameReference, HasPaint {
   List<StickConfig> _sticks = [];
   List<bool>? _lastProcessedStates;
   final Random _random = Random();
@@ -50,14 +34,14 @@ class YutDisplayComponent extends PositionComponent with HasGameRef, HasPaint {
   }
 
   void _initIdleSticks() {
-    final centerX = gameRef.size.x / 2;
+    final centerX = game.size.x / 2;
 
     // Responsive positioning based on aspect ratio
-    final aspectRatio = gameRef.size.x / gameRef.size.y;
+    final aspectRatio = game.size.x / game.size.y;
     final centerY = aspectRatio > 0.7
-        ? gameRef.size.y *
+        ? game.size.y *
               0.72 // Wide screen: inside board, below center
-        : gameRef.size.y * 0.82; // Narrow screen: outside board, at bottom
+        : game.size.y * 0.82; // Narrow screen: outside board, at bottom
 
     _sticks = List.generate(4, (i) {
       final pos = Vector2(centerX + (i - 1.5) * 45, centerY);
@@ -96,16 +80,12 @@ class YutDisplayComponent extends PositionComponent with HasGameRef, HasPaint {
     // Haptic feedback: Throw start
     HapticFeedback.heavyImpact();
 
-    final centerX = gameRef.size.x / 2;
+    final centerX = game.size.x / 2;
 
     // Responsive positioning
-    final aspectRatio = gameRef.size.x / gameRef.size.y;
-    final startY = aspectRatio > 0.7
-        ? gameRef.size.y * 0.72
-        : gameRef.size.y * 0.82;
-    final targetY = aspectRatio > 0.7
-        ? gameRef.size.y * 0.45
-        : gameRef.size.y * 0.45;
+    final aspectRatio = game.size.x / game.size.y;
+    final startY = aspectRatio > 0.7 ? game.size.y * 0.72 : game.size.y * 0.82;
+    final targetY = aspectRatio > 0.7 ? game.size.y * 0.45 : game.size.y * 0.45;
 
     // Use slots to guarantee NO OVERLAP
     List<int> slots = [0, 1, 2, 3]..shuffle(_random);
@@ -123,8 +103,8 @@ class YutDisplayComponent extends PositionComponent with HasGameRef, HasPaint {
         // This stick flies off-screen
         final offScreenX = _random.nextBool()
             ? -100.0 // Left side
-            : gameRef.size.x + 100.0; // Right side
-        final offScreenY = gameRef.size.y + 200.0; // Below screen
+            : game.size.x + 100.0; // Right side
+        final offScreenY = game.size.y + 200.0; // Below screen
 
         _sticks[i].targetPosition = Vector2(offScreenX, offScreenY);
         _sticks[i].velocity = Vector2(
@@ -154,13 +134,11 @@ class YutDisplayComponent extends PositionComponent with HasGameRef, HasPaint {
   }
 
   void _syncInitialSticks(List<bool> states) {
-    final centerX = gameRef.size.x / 2;
+    final centerX = game.size.x / 2;
 
     // Responsive positioning
-    final aspectRatio = gameRef.size.x / gameRef.size.y;
-    final centerY = aspectRatio > 0.7
-        ? gameRef.size.y * 0.72
-        : gameRef.size.y * 0.82;
+    final aspectRatio = game.size.x / game.size.y;
+    final centerY = aspectRatio > 0.7 ? game.size.y * 0.72 : game.size.y * 0.82;
 
     for (int i = 0; i < 4; i++) {
       _sticks[i].position = Vector2(centerX + (i - 1.5) * 45, centerY);
@@ -222,111 +200,16 @@ class YutDisplayComponent extends PositionComponent with HasGameRef, HasPaint {
     if (opacity == 0) return;
     if (_sticks.isEmpty) return;
 
-    const double stickWidth = 26.0;
-    const double stickHeight = 115.0;
-
+    final shadowZ = _isAnimating
+        ? (1.0 - (_animationTime / throwDuration)).clamp(0, 1) * 20
+        : 3.0;
     for (int i = 0; i < 4; i++) {
-      final s = _sticks[i];
-      canvas.save();
-      canvas.translate(s.position.x, s.position.y);
-      canvas.rotate(s.angle);
-
-      final rect = Rect.fromCenter(
-        center: Offset.zero,
-        width: stickWidth,
-        height: stickHeight,
+      YutStickPainter.paint(
+        canvas,
+        _sticks[i],
+        shadowZ: shadowZ.toDouble(),
+        hasBackDoMark: i == 0,
       );
-      final rRect = RRect.fromRectAndRadius(rect, const Radius.circular(15));
-
-      double shadowZ = _isAnimating
-          ? (1.0 - (_animationTime / throwDuration)).clamp(0, 1) * 20
-          : 3.0;
-      canvas.drawRRect(
-        rRect.shift(Offset(shadowZ, shadowZ * 1.5)),
-        Paint()
-          ..color = Colors.black26
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
-      );
-
-      double normalizedAngle = (s.angle.abs() / pi) % 2;
-      bool showingFlat = (normalizedAngle > 0.5 && normalizedAngle < 1.5);
-
-      canvas.drawRRect(
-        rRect,
-        Paint()
-          ..shader = LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: showingFlat
-                ? [const Color(0xFFF5DEB3), const Color(0xFFFFE4B5)]
-                : [const Color(0xFF4D260B), const Color(0xFF8B4513)],
-          ).createShader(rect),
-      );
-
-      // Detail markers based on which side is showing
-      if (showingFlat) {
-        // Flat side (belly): 3 horizontal lines
-        final markPaint = Paint()
-          ..color = Colors.brown.withOpacity(0.35)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.5;
-        for (var step in [0.25, 0.5, 0.75]) {
-          final y = -stickHeight / 2 + stickHeight * step;
-          canvas.drawLine(
-            Offset(-stickWidth * 0.35, y),
-            Offset(stickWidth * 0.35, y),
-            markPaint,
-          );
-        }
-
-        // Back-Do mark: Single black X at center (only for stick 0)
-        if (i == 0) {
-          final xPaint = Paint()
-            ..color = Colors.black
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 4;
-          const double xSize = 9.0;
-          final centerY = 0.0; // Center of the stick
-          canvas.drawLine(
-            Offset(-xSize, centerY - xSize),
-            Offset(xSize, centerY + xSize),
-            xPaint,
-          );
-          canvas.drawLine(
-            Offset(xSize, centerY - xSize),
-            Offset(-xSize, centerY + xSize),
-            xPaint,
-          );
-        }
-      } else {
-        // Round side (back): 3 black X marks uniformly distributed
-        final xPaint = Paint()
-          ..color = Colors.black.withOpacity(0.6)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3.5;
-        const double xSize = 6.5;
-        for (var step in [0.25, 0.5, 0.75]) {
-          final y = -stickHeight / 2 + stickHeight * step;
-          canvas.drawLine(
-            Offset(-xSize, y - xSize),
-            Offset(xSize, y + xSize),
-            xPaint,
-          );
-          canvas.drawLine(
-            Offset(xSize, y - xSize),
-            Offset(-xSize, y + xSize),
-            xPaint,
-          );
-        }
-      }
-      canvas.drawRRect(
-        rRect,
-        Paint()
-          ..color = Colors.white12
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.2,
-      );
-      canvas.restore();
     }
   }
 }

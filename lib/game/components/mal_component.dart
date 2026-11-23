@@ -1,17 +1,19 @@
-import 'dart:math' as math;
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/events.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../domain/models/team.dart';
 import '../../domain/logic/board_graph.dart';
 import '../../domain/logic/path_finder.dart';
 import '../../presentation/providers/game_provider.dart';
 import '../../presentation/providers/game_state.dart';
 import 'board_component.dart';
+import 'mal_renderer.dart';
 
-class MalComponent extends PositionComponent with TapCallbacks, HasGameRef {
+class MalComponent extends PositionComponent
+    with TapCallbacks, HasGameReference {
   Mal mal;
   final WidgetRef ref;
   int stackCount = 1;
@@ -21,7 +23,6 @@ class MalComponent extends PositionComponent with TapCallbacks, HasGameRef {
   bool _initialized = false;
 
   // Track last handled movement to prevent animation loops
-  int? _lastTargetNodeId;
   String? _lastPathKey;
 
   MalComponent({required this.mal, required this.ref});
@@ -69,14 +70,13 @@ class MalComponent extends PositionComponent with TapCallbacks, HasGameRef {
 
     if (newPathKey == _lastPathKey) {
       // Already handling this move/state, skip to prevent animation restart
-      this.mal = newMal;
+      mal = newMal;
       return;
     }
 
     if (path != null && path.isNotEmpty) {
       // NEW movement path detected
       _lastPathKey = newPathKey;
-      _lastTargetNodeId = newMal.currentNodeId;
 
       final board = parent as BoardComponent;
       _moveQueue.clear(); // Clear old queue
@@ -93,20 +93,20 @@ class MalComponent extends PositionComponent with TapCallbacks, HasGameRef {
           }
         }
       }
-      this.mal = newMal;
+      mal = newMal;
     } else {
       // Static state update (e.g. stack count changed or turn ended)
       final posChanged =
-          this.mal.currentNodeId != newMal.currentNodeId ||
-          this.mal.isFinished != newMal.isFinished;
+          mal.currentNodeId != newMal.currentNodeId ||
+          mal.isFinished != newMal.isFinished;
 
       // 잡혔는지 확인: 이전에 판 위에 있었는데 이제 시작점으로
       final wasCaught =
-          this.mal.currentNodeId != null &&
+          mal.currentNodeId != null &&
           newMal.currentNodeId == null &&
           !newMal.isFinished;
 
-      this.mal = newMal;
+      mal = newMal;
       _lastPathKey = newPathKey;
 
       if (wasCaught) {
@@ -124,7 +124,7 @@ class MalComponent extends PositionComponent with TapCallbacks, HasGameRef {
   Vector2 _getHomePosition() {
     if (parent == null || parent is! BoardComponent) return Vector2.zero();
     final board = parent as BoardComponent;
-    final gameSize = gameRef.size;
+    final gameSize = game.size;
 
     final state = ref.read(gameProvider);
     final teamIndex = state.teams.indexWhere((t) => t.color == mal.color);
@@ -226,96 +226,13 @@ class MalComponent extends PositionComponent with TapCallbacks, HasGameRef {
     );
   }
 
-  Vector2 _getStartOffset(TeamColor color) {
-    // 보드 크기에 비례하는 간격 사용
-    if (parent == null || parent is! BoardComponent) {
-      return Vector2.zero();
-    }
-    final board = parent as BoardComponent;
-    final gap = board.size.x * 0.08; // 보드 너비의 8%
-
-    switch (color) {
-      case TeamColor.orange:
-        return Vector2(-gap, 0);
-      case TeamColor.green:
-        return Vector2(gap, 0);
-      case TeamColor.red:
-        return Vector2(-gap, gap * 1.5);
-      case TeamColor.blue:
-        return Vector2(gap, gap * 1.5);
-    }
-  }
-
-  Vector2 _getStartOffsetVertical(TeamColor color) {
-    // 화면 기준 세로 정렬 (단순하게)
-    final gameHeight = gameRef.size.y;
-    final startY = gameHeight * 0.25; // 화면 높이의 25%부터 시작
-    final spacing = 60.0; // 고정 간격
-
-    double yPos;
-    switch (color) {
-      case TeamColor.orange:
-        yPos = startY;
-        break;
-      case TeamColor.green:
-        yPos = startY + spacing;
-        break;
-      case TeamColor.red:
-        yPos = startY + spacing * 2;
-        break;
-      case TeamColor.blue:
-        yPos = startY + spacing * 3;
-        break;
-    }
-
-    return Vector2(0, yPos);
-  }
-
   @override
   void render(Canvas canvas) {
     if (!_initialized) return;
     final center = (size / 2).toOffset();
     final radius = size.x / 2;
-    final color = _getRawColor(mal.color);
 
-    // Visual: Coin body
-    canvas.drawCircle(
-      center + const Offset(0, 4),
-      radius,
-      Paint()..color = Colors.black26,
-    );
-    canvas.drawCircle(
-      center + const Offset(0, 2),
-      radius,
-      Paint()..color = _getDarkerColor(color),
-    );
-    canvas.drawCircle(center, radius, Paint()..color = color);
-
-    // Rim
-    canvas.drawCircle(
-      center,
-      radius - 4,
-      Paint()
-        ..color = Colors.white24
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
-    );
-
-    if (stackCount > 1) {
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: 'x$stackCount',
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
-            shadows: [Shadow(blurRadius: 3, color: Colors.black)],
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      textPainter.paint(canvas, center + Offset(radius - 8, -radius + 4));
-    }
+    MalRenderer.paintCoin(canvas, center, radius, mal.color, stackCount);
 
     final state = ref.read(gameProvider);
     // Pulse effect if this piece belongs to the current team and we're picking
@@ -323,16 +240,7 @@ class MalComponent extends PositionComponent with TapCallbacks, HasGameRef {
         (state.status == GameStatus.selectingMal ||
             state.status == GameStatus.awaitingShortcutDecision) &&
         state.currentTeam.isHuman) {
-      final pulse =
-          0.5 + 0.5 * math.sin(DateTime.now().millisecondsSinceEpoch / 200);
-      canvas.drawCircle(
-        center,
-        radius + 2 + pulse * 6,
-        Paint()
-          ..color = Colors.white.withOpacity(0.3 * (1 - pulse))
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 4,
-      );
+      MalRenderer.paintSelectionPulse(canvas, center, radius);
     }
   }
 
@@ -355,27 +263,5 @@ class MalComponent extends PositionComponent with TapCallbacks, HasGameRef {
         state.currentTeam.isHuman) {
       ref.read(gameProvider.notifier).selectMal(mal.id);
     }
-  }
-
-  Color _getRawColor(TeamColor color) {
-    switch (color) {
-      case TeamColor.orange:
-        return Colors.orange;
-      case TeamColor.green:
-        return Colors.green;
-      case TeamColor.red:
-        return Colors.red;
-      case TeamColor.blue:
-        return Colors.blue;
-    }
-  }
-
-  Color _getDarkerColor(Color color) {
-    return Color.fromARGB(
-      255,
-      (color.red * 0.7).toInt(),
-      (color.green * 0.7).toInt(),
-      (color.blue * 0.7).toInt(),
-    );
   }
 }

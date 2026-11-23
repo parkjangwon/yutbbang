@@ -1,4 +1,5 @@
 import 'dart:math';
+
 import '../models/team.dart';
 import '../models/yut_result.dart';
 import 'path_finder.dart';
@@ -13,7 +14,9 @@ class AILogic {
     required List<Team> teams,
     required int turnIndex,
     required YutResult result,
+    Random? random,
   }) {
+    final rng = random ?? _random;
     final currentTeam = teams[turnIndex % teams.length];
     final opponentTeams = teams
         .where((t) => t.color != currentTeam.color)
@@ -24,7 +27,7 @@ class AILogic {
     if (movableMals.isEmpty) return null;
 
     // 2. Score each move
-    List<MapEntry<int, int>> scores = [];
+    final scores = <MapEntry<int, int>>[];
 
     for (var mal in movableMals) {
       int score = 0;
@@ -38,7 +41,7 @@ class AILogic {
 
       final destinationId = path.last;
 
-      if (destinationId == -1) {
+      if (destinationId == PathFinder.finishNodeId) {
         // Goal move
         score += 100;
       } else {
@@ -76,11 +79,10 @@ class AILogic {
 
     // Simple difficulty heuristic:
     // With probability (difficulty/10), pick best. Else pick random.
-    double threshold = difficulty / 10.0;
-    if (_random.nextDouble() < threshold) {
+    final threshold = difficulty / 10.0;
+    if (rng.nextDouble() < threshold) {
       return scores.first.key;
-    } else {
-      return scores[_random.nextInt(scores.length)].key;
     }
+    return scores[rng.nextInt(scores.length)].key;
   }
 }

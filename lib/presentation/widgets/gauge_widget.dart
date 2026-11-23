@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../providers/game_state.dart';
 
 class YutGaugeWidget extends StatelessWidget {
@@ -21,12 +22,12 @@ class YutGaugeWidget extends StatelessWidget {
       width: 280,
       height: 40,
       decoration: BoxDecoration(
-        color: Colors.grey.shade900.withOpacity(0.9),
+        color: Colors.grey.shade900.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white24, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -55,10 +56,10 @@ class YutGaugeWidget extends StatelessWidget {
               height: 16,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.9),
+                  color: Colors.redAccent.withValues(alpha: 0.9),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.redAccent.withOpacity(0.6),
+                      color: Colors.redAccent.withValues(alpha: 0.6),
                       blurRadius: 8,
                     ),
                   ],
@@ -78,7 +79,7 @@ class YutGaugeWidget extends StatelessWidget {
                 borderRadius: BorderRadius.circular(3),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.blue.withOpacity(0.8),
+                    color: Colors.blue.withValues(alpha: 0.8),
                     blurRadius: 12,
                     spreadRadius: 2,
                   ),
